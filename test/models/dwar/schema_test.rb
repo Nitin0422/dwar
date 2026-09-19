@@ -37,7 +37,9 @@ class SchemaTest < ActiveSupport::TestCase
 
     percentage = columns.find { |column| column.name == "percentage" }
     refute percentage.null, "expected percentage to be not-null"
-    assert_equal 0, percentage.default
+    # Integer-column defaults are reported as an Integer on Rails 7.1/8.1 and
+    # as a String on Rails 7.2/8.0; accept both representations.
+    assert_includes [0, "0"], percentage.default, "expected percentage default to be 0"
   end
 
   test "foreign keys cascade from flag_groups and memberships to the dwar tables" do

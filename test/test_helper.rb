@@ -27,8 +27,15 @@ ActiveRecord::Migrator.migrations_paths = [
 # against.
 schema_file = Rails.root.join("db", "schema.rb")
 if schema_file.exist?
-  ActiveRecord::Base.connection_pool.internal_metadata[:schema_sha1] =
-    OpenSSL::Digest::SHA1.hexdigest(schema_file.read)
+  # ConnectionPool#internal_metadata exists from Rails 7.2; on 7.1 the
+  # accessor lives on the connection adapter instead. Both return the same
+  # InternalMetadata writer with an identical []/[]= interface.
+  metadata = if ActiveRecord::Base.connection_pool.respond_to?(:internal_metadata)
+    ActiveRecord::Base.connection_pool.internal_metadata
+  else
+    ActiveRecord::Base.connection.internal_metadata
+  end
+  metadata[:schema_sha1] = OpenSSL::Digest::SHA1.hexdigest(schema_file.read)
 end
 
 require "rails/test_help"

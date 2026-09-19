@@ -1,0 +1,55 @@
+name: CI
+
+# Runs the full test suite and the standardrb linter on every push to main
+# and on every pull request.
+#
+# Matrix contract:
+#   - ruby: 3.2, 3.3, 3.4 — matches the gemspec's required_ruby_version (>= 3.2).
+#   - rails: 7.1, 7.2, 8.0 — the support matrix; each cell selects its variant
+#     gemfile via BUNDLE_GEMFILE (gemfiles/rails_<version>.gemfile).
+#
+# Lockfile/bundler-cache contract:
+#   - The variant gemfile lockfiles (gemfiles/*.gemfile.lock) are committed so
+#     that CI installs are frozen and deterministic.
+#   - ruby/setup-ruby with `bundler-cache: true` reads the selected lockfile,
+#     installs the locked bundler version, restores dependencies from the
+#     gem-cache, and caches them for subsequent runs, keeping runs fast.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: test (ruby ${{ matrix.ruby }}, rails ${{ matrix.rails }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby: ["3.2", "3.3", "3.4"]
+        rails: ["7.1", "7.2", "8.0"]
+    env:
+      BUNDLE_GEMFILE: ${{ github.workspace }}/gemfiles/rails_${{ matrix.rails }}.gemfile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+      - run: bundle exec rake test
+
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+      - run: bundle exec standardrb
