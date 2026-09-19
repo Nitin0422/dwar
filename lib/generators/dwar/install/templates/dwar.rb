@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # Dwar is configured once, in an initializer:
 #
 #   Dwar.configure do |config|
