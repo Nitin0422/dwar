@@ -3,6 +3,7 @@
 require_relative "dwar/version"
 require_relative "dwar/engine"
 require_relative "dwar/configuration"
+require_relative "dwar/bucketing"
 
 module Dwar
   class << self
