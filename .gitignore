@@ -1,0 +1,17 @@
+/.bundle/
+/vendor/bundle/
+/pkg/
+*.gem
+/Gemfile.lock
+/coverage/
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+/test/dummy/log/*.log
+!/test/dummy/log/.keep
+/test/dummy/tmp/*
+!/test/dummy/tmp/.keep
+/test/dummy/db/*.sqlite3
+/test/dummy/db/*.sqlite3-journal
