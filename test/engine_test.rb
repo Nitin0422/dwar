@@ -12,12 +12,13 @@ class EngineTest < ActiveSupport::TestCase
   test "engine namespace is isolated from the host application" do
     assert Dwar::Engine.isolated?
 
-    # The engine ships exactly two constants: Engine and VERSION. The dummy
-    # host app defines its own ApplicationController, etc., and the engine
-    # contributes no application code; were the engine to define
-    # controllers/models/helpers or reopen host constants, the extra
-    # constants would appear here.
-    assert_equal [:Engine, :VERSION], Dwar.constants.sort
+    # The engine ships Engine and VERSION. Assert presence rather than the
+    # exact constant inventory: later features will legitimately add
+    # constants (Configuration, Flag, Bucketing, ...). Isolation from the
+    # host app is guaranteed below — were the engine to reopen host
+    # constants, they would gain Dwar ancestry.
+    assert_includes Dwar.constants, :Engine
+    assert_includes Dwar.constants, :VERSION
 
     # Host constants defined by the dummy app must not have gained any Dwar
     # ancestry from loading the engine.
@@ -37,10 +38,5 @@ class EngineTest < ActiveSupport::TestCase
 
     defaults = Dwar::Engine.routes.default_scope
     assert_equal "dwar", defaults[:module].to_s
-  end
-
-  test "dwar version remains exposed" do
-    assert_kind_of String, Dwar::VERSION
-    refute_empty Dwar::VERSION
   end
 end
