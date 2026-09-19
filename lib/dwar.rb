@@ -2,6 +2,30 @@
 
 require_relative "dwar/version"
 require_relative "dwar/engine"
+require_relative "dwar/configuration"
 
 module Dwar
+  class << self
+    # Yields a freshly built Dwar::Configuration for the host application to
+    # customize, then makes it the current configuration. Requires a block.
+    def configure
+      raise ArgumentError, "Dwar.configure requires a block" unless block_given?
+
+      @config = Dwar::Configuration.new.tap { |c| yield c }
+    end
+
+    # The current Dwar::Configuration. Before any configure call this is the
+    # frozen default instance (Dwar::Configuration.default).
+    def config
+      @config ||= Dwar::Configuration.default
+    end
+
+    # Internal: test/dev support. Drops the memoized configuration so the
+    # next config read returns the frozen default again; documented as such
+    # rather than as a public API.
+    def reset_config
+      @config = nil
+      config
+    end
+  end
 end
