@@ -7,3 +7,9 @@ gemspec
 gem "minitest", "~> 5.0"
 gem "rake", "~> 13.0"
 gem "standard", "~> 1.0"
+
+# The dummy app (test/dummy) needs sqlite3 to boot. It is a development/test
+# dependency only and must NOT be added to the gemspec runtime dependencies.
+group :development, :test do
+  gem "sqlite3", "~> 2.0"
+end
