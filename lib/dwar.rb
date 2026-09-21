@@ -4,6 +4,7 @@ require_relative "dwar/version"
 require_relative "dwar/engine"
 require_relative "dwar/configuration"
 require_relative "dwar/bucketing"
+require_relative "dwar/evaluator"
 
 module Dwar
   class << self
@@ -27,6 +28,15 @@ module Dwar
     def reset_config
       @config = nil
       config
+    end
+
+    # Public evaluation API. Returns +true+ or +false+ for whether the
+    # flag identified by +flag_key+ is enabled for +actor+. +actor+ is
+    # optional and may be omitted for non-percentage checks.
+    #
+    # Delegates to Dwar::Evaluator.enabled?; never raises.
+    def enabled?(flag_key, actor = nil)
+      Dwar::Evaluator.enabled?(flag_key, actor)
     end
   end
 end
