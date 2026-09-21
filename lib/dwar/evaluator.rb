@@ -30,15 +30,18 @@ module Dwar
           true
         elsif flag.percentage?
           return false unless actor
-          bucket = safe_bucket?(flag, actor)
-          bucket && bucket < flag.percentage
+          bucket = safe_bucket(flag, actor)
+          return false unless bucket
+          bucket < flag.percentage
         elsif flag.groups?
           return false unless actor
           belongs_to_targeted_group?(actor, flag)
         elsif flag.groups_and_percentage?
           return false unless actor
-          belongs_to_targeted_group?(actor, flag) &&
-            (bucket = safe_bucket?(flag, actor)) && bucket < flag.percentage
+          return false unless belongs_to_targeted_group?(actor, flag)
+          bucket = safe_bucket(flag, actor)
+          return false unless bucket
+          bucket < flag.percentage
         else
           false
         end
@@ -48,7 +51,7 @@ module Dwar
 
       # Returns the bucket for a valid actor, or +nil+ if the actor's id
       # is nil/empty so that Bucketing is never called with invalid args.
-      def safe_bucket?(flag, actor)
+      def safe_bucket(flag, actor)
         actor_id = actor.id
         return nil if actor_id.nil? || actor_id.to_s.empty?
 

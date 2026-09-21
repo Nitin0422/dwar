@@ -201,6 +201,25 @@ class EvaluationTest < ActiveSupport::TestCase
   end
 
   # Nil/empty actor id guard ----------------------------------------------
+  test "groups state returns false when actor has nil id" do
+    flag = Dwar::Flag.create!(key: "nil_id_groups", state: "groups")
+    group = Dwar::Group.create!(name: "beta")
+    Dwar::FlagGroup.create!(flag: flag, group: group)
+    user = User.new(name: "ghost")
+    refute Dwar.enabled?(flag.key, user)
+  end
+
+  test "groups_and_percentage returns false when actor is a member but bucket >= percentage" do
+    flag = Dwar::Flag.create!(key: "gp_bucket_edge", state: "groups_and_percentage", percentage: 50)
+    group = Dwar::Group.create!(name: "beta")
+    Dwar::FlagGroup.create!(flag: flag, group: group)
+    user = User.create!(name: "bucket_edge_user")
+    Dwar::GroupMembership.create!(group: group, actor: user)
+    bucket = Dwar::Bucketing.bucket(flag.key, user.class, user.id)
+    flag.update!(percentage: bucket) if bucket >= 50
+    refute Dwar.enabled?(flag.key, user)
+  end
+
   test "nil actor id returns false without raising for percentage flag" do
     flag = Dwar::Flag.create!(key: "nil_actor_pct", state: "percentage", percentage: 50)
     assert_nothing_raised { Dwar.enabled?(flag.key, nil) }
