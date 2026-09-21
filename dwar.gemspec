@@ -11,7 +11,7 @@ Gem::Specification.new do |spec|
   spec.homepage = "https://github.com/Nitin0422/dwar"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.2"
-  spec.files = Dir.chdir(__dir__) { Dir["lib/**/*", "app/**/*", "db/**/*", "LICENSE.txt"] }
+  spec.files = Dir.chdir(__dir__) { Dir["lib/**/*", "app/**/*", "config/**/*", "db/**/*", "LICENSE.txt"] }
   spec.require_paths = ["lib"]
   spec.add_dependency "rails", ">= 7.1"
   spec.metadata = {"homepage_uri" => "https://github.com/Nitin0422/dwar", "source_code_uri" => "https://github.com/Nitin0422/dwar", "rubygems_mfa_required" => "true"}

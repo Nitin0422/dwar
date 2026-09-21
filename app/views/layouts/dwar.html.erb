@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Dwar Admin</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <style>
+      body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 0; }
+      header { background: #1a1a2e; color: #fff; padding: 1rem 2rem; }
+      header h1 { margin: 0; font-size: 1.25rem; }
+      nav a { color: #c4c4e8; text-decoration: none; margin-right: 1rem; }
+      nav a:hover { color: #fff; }
+      main { padding: 2rem; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Dwar</h1>
+      <nav>
+        <a href="<%= admin_flags_path %>">Flags</a>
+        <a href="<%= admin_groups_path %>">Groups</a>
+        <a href="<%= admin_memberships_path %>">Memberships</a>
+        <a href="<%= admin_users_path %>">Users</a>
+      </nav>
+    </header>
+    <main>
+      <%= yield %>
+    </main>
+  </body>
+</html>
