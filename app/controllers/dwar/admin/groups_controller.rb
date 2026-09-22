@@ -37,8 +37,11 @@ module Dwar
       end
 
       def destroy
-        @group.destroy
-        redirect_to admin_groups_path, notice: "Group was successfully destroyed."
+        if @group.destroy
+          redirect_to admin_groups_path, notice: "Group was successfully destroyed."
+        else
+          redirect_to admin_groups_path, alert: "Group could not be deleted."
+        end
       end
 
       private
