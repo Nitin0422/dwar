@@ -25,13 +25,23 @@ class SectionsTest < ActionDispatch::IntegrationTest
   end
 
   # AC (T11 picker contract): users#index invokes the configured finder
-  # and renders its records as json (empty here because the stub finds none).
+  # with the query string and renders its records as a JSON array.
   test "users index returns finder results as json array" do
-    get "/dwar/admin/users"
+    received = :unset
+    Dwar.configure do |c|
+      c.authorization = ->(_controller) { true }
+      c.user_finder = ->(query) {
+        received = query
+        []
+      }
+    end
+
+    get "/dwar/admin/users.json", params: {q: "al"}
 
     assert_response :success
-    assert_equal "[]", response.body.strip
     assert_includes response.content_type, "application/json"
+    assert_equal "al", received
+    assert_equal [], JSON.parse(response.body)
   end
 
   # AC: The shared layout contains the brand name and an inline

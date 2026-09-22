@@ -7,7 +7,11 @@
 <%# - results list: [data-dwar-user-picker-list] (<ul>, selectable options) %>
 <%# %>
 <%# Locals (all optional with sensible defaults): %>
-<%# - url: picker endpoint (default: admin_users_path(format: :json)) %>
+<%# - url: picker endpoint; emitted as data-url on the wrapper so the %>
+<%#   initializer can read it from the DOM instead of hard-coding a path %>
+<%#   (omit it when the host mounts the engine off the default /dwar path %>
+<%#   and pass the endpoint explicitly to DwarUserPicker.init instead). %>
+<%#   Example: render "dwar/admin/shared/user_picker", url: "/dwar/admin/users.json" %>
 <%# - input_name: name for the visible input (default: "user_search") %>
 <%# - hidden_name: name for the hidden id input (default: "user_id") %>
 <%# - input_id: DOM id for the visible input (default: "dwar-user-search") %>
@@ -16,12 +20,13 @@
 <%# Serves GET /dwar/admin/users.json?q= via the existing %>
 <%# resources :users, only: [:index] route (format negotiation, no new route). %>
 <%# Load app/assets/javascripts/dwar/user_picker.js on the consuming page, then: %>
+<%#   var root = document.querySelector("[data-dwar-user-picker]"); %>
 <%#   DwarUserPicker.init( %>
-<%#     document.querySelector("[data-dwar-user-picker-input]"), %>
-<%#     { url: ".../users.json", %>
-<%#       hiddenField: document.querySelector("[data-dwar-user-picker-hidden]") } %>
+<%#     root.querySelector("[data-dwar-user-picker-input]"), %>
+<%#     { url: root.dataset.url, %>
+<%#       hiddenField: root.querySelector("[data-dwar-user-picker-hidden]") } %>
 <%#   ); %>
-<div data-dwar-user-picker>
+<div data-dwar-user-picker<% if local_assigns[:url] %> data-url="<%= local_assigns[:url] %>"<% end %>>
   <input
     type="text"
     name="<%= local_assigns.fetch(:input_name, "user_search") %>"

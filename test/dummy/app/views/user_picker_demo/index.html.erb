@@ -1,0 +1,22 @@
+<h1>Dwar user picker demo (dev harness, not shipped)</h1>
+<p>
+  Manual verification: type a name below. The field debounces (~200ms), then
+  GETs <code>/dwar/admin/users.json?q=…</code>; click (or ArrowDown + Enter) a
+  result to select it — the visible label fills in and the hidden
+  <code>user_id</code> field receives the record id. Seed demo rows with:
+  <code>bin/rails runner '3.times { |i| User.create!(name: "Demo #{i}") }'</code>.
+</p>
+<%= render "dwar/admin/shared/user_picker", url: "/dwar/admin/users.json" %>
+<script src="/user_picker_demo/user_picker.js"></script>
+<script>
+  (function() {
+    var root = document.querySelector("[data-dwar-user-picker]");
+    DwarUserPicker.init(
+      root.querySelector("[data-dwar-user-picker-input]"),
+      {
+        url: root.dataset.url,
+        hiddenField: root.querySelector("[data-dwar-user-picker-hidden]")
+      }
+    );
+  })();
+</script>
