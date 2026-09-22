@@ -1,2 +1,31 @@
 <h1>Groups</h1>
-<p>Admin groups management.</p>
+
+<p><%= link_to "New group", new_admin_group_path %></p>
+
+<% if @groups.any? %>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Description</th>
+        <th>Members</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @groups.each do |group| %>
+        <tr>
+          <td><%= group.name %></td>
+          <td><%= group.description %></td>
+          <td><%= @member_counts[group.id] || 0 %></td>
+          <td>
+            <%= link_to "Edit", edit_admin_group_path(group) %>
+            <%= button_to "Delete", admin_group_path(group), method: :delete, form: {data: {turbo_confirm: "Are you sure?"}} %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <p>No groups found.</p>
+<% end %>
