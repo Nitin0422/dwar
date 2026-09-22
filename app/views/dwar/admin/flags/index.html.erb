@@ -1,2 +1,53 @@
 <h1>Flags</h1>
-<p>Admin flags management.</p>
+
+<p><%= link_to "New flag", new_admin_flag_path %></p>
+
+<%= form_with url: admin_flags_path, method: :get, local: true do |form| %>
+  <div>
+    <%= form.label :q, "Search" %>
+    <%= form.search_field :q, value: params[:q] %>
+    <%= form.submit "Search" %>
+  </div>
+<% end %>
+
+<table>
+  <thead>
+    <tr>
+      <th>Key</th>
+      <th>State</th>
+      <th>Targeting</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% if @flags.any? %>
+      <% @flags.each do |flag| %>
+        <tr>
+          <td><%= flag.key %></td>
+          <td><%= flag.state %></td>
+          <td>
+            <% if flag.groups_and_percentage? %>
+              <%= flag.percentage %>% &middot; <%= flag.groups.map(&:name).join(", ").presence || "(no groups)" %>
+            <% elsif flag.percentage? %>
+              <%= flag.percentage %>%
+            <% elsif flag.groups? %>
+              <%= flag.groups.map(&:name).join(", ").presence || "(no groups)" %>
+            <% elsif flag.enabled? %>
+              Everyone
+            <% else %>
+              &mdash;
+            <% end %>
+          </td>
+          <td>
+            <%= link_to "Edit", edit_admin_flag_path(flag) %>
+            <%= link_to "Destroy", admin_flag_path(flag), data: {turbo_method: :delete, turbo_confirm: "Are you sure?"} %>
+          </td>
+        </tr>
+      <% end %>
+    <% else %>
+      <tr>
+        <td colspan="4">No flags found.</td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
