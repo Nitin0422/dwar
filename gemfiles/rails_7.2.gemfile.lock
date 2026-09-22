@@ -1,5 +1,5 @@
 PATH
-  remote: /Users/nitintandukar/Desktop/SideProjects/dwar
+  remote: ..
   specs:
     dwar (0.1.0)
       rails (>= 7.1)
