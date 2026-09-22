@@ -5,7 +5,10 @@ require "test_helper"
 class SectionsTest < ActionDispatch::IntegrationTest
   def setup
     Dwar.reset_config
-    Dwar.configure { |c| c.authorization = ->(_controller) { true } }
+    Dwar.configure do |c|
+      c.authorization = ->(_controller) { true }
+      c.user_finder = ->(_query) { [] }
+    end
   end
 
   def teardown
@@ -21,13 +24,24 @@ class SectionsTest < ActionDispatch::IntegrationTest
     end
   end
 
-  # AC: users#index returns json: [].
-  test "users index returns empty json array" do
-    get "/dwar/admin/users"
+  # AC (T11 picker contract): users#index invokes the configured finder
+  # with the query string and renders its records as a JSON array.
+  test "users index returns finder results as json array" do
+    received = :unset
+    Dwar.configure do |c|
+      c.authorization = ->(_controller) { true }
+      c.user_finder = ->(query) {
+        received = query
+        []
+      }
+    end
+
+    get "/dwar/admin/users.json", params: {q: "al"}
 
     assert_response :success
-    assert_equal "[]", response.body.strip
     assert_includes response.content_type, "application/json"
+    assert_equal "al", received
+    assert_equal [], JSON.parse(response.body)
   end
 
   # AC: The shared layout contains the brand name and an inline
