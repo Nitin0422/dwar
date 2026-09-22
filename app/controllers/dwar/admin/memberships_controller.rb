@@ -35,17 +35,56 @@ module Dwar
           actor_type: actor_type,
           actor_id: membership_params[:actor_id]
         )
+        audit_actor_type, audit_actor_id = Dwar::Auditing.resolve_actor(self)
 
-        if @membership.save
-          redirect_to admin_group_memberships_path(@group), notice: "Member was successfully added."
-        else
+        begin
+          Dwar::ApplicationRecord.transaction do
+            @membership.save!
+            Dwar::Auditing.record!(
+              auditable: @membership,
+              action: "create",
+              change_summary: Dwar::Auditing.membership_summary(@group, @membership),
+              actor_type: audit_actor_type,
+              actor_id: audit_actor_id
+            )
+          end
+        rescue ActiveRecord::RecordInvalid => e
+          # Only the membership's own validation failure re-renders the
+          # list; an audit-row failure must propagate (same-transaction
+          # rollback, never silently swallowed).
+          raise unless e.record.equal?(@membership)
+
           load_members
           render :index, status: :unprocessable_entity
+          return
         end
+
+        redirect_to admin_group_memberships_path(@group), notice: "Member was successfully added."
       end
 
       def destroy
-        if @membership.destroy
+        audit_actor_type, audit_actor_id = Dwar::Auditing.resolve_actor(self)
+        summary = Dwar::Auditing.membership_summary(@group, @membership)
+
+        destroyed = false
+        Dwar::ApplicationRecord.transaction do
+          destroyed = @membership.destroy
+          if destroyed
+            Dwar::Auditing.record!(
+              auditable: @membership,
+              action: "destroy",
+              change_summary: summary,
+              actor_type: audit_actor_type,
+              actor_id: audit_actor_id
+            )
+          else
+            # A false destroy changed nothing; roll back (a no-op) without
+            # raising so the alert path below still renders.
+            raise ActiveRecord::Rollback
+          end
+        end
+
+        if destroyed
           redirect_to admin_group_memberships_path(@group), notice: "Member was successfully removed."
         else
           redirect_to admin_group_memberships_path(@group), alert: "Member could not be removed."

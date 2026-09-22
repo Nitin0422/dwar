@@ -1,0 +1,30 @@
+<h1>Audit trail</h1>
+
+<p>Showing up to <%= Dwar::Admin::AuditsController::AUDIT_LIMIT %> most recent entries, newest first.</p>
+
+<% if @audits.any? %>
+  <table>
+    <thead>
+      <tr>
+        <th>When</th>
+        <th>Action</th>
+        <th>Record</th>
+        <th>Actor</th>
+        <th>Changes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @audits.each do |audit| %>
+        <tr>
+          <td><%= audit.created_at.strftime("%Y-%m-%d %H:%M:%S") %></td>
+          <td><%= audit.action %></td>
+          <td><%= @record_labels[audit.id] %></td>
+          <td><%= actor_label(audit) %></td>
+          <td><%= truncate(summary_text(audit.change_summary), length: 160) %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <p>No audit entries yet.</p>
+<% end %>
