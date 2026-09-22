@@ -17,27 +17,85 @@ module Dwar
 
       def create
         @group = Dwar::Group.new(group_params)
+        actor_type, actor_id = Dwar::Auditing.resolve_actor(self)
 
-        if @group.save
-          redirect_to admin_groups_path, notice: "Group was successfully created."
-        else
+        begin
+          Dwar::ApplicationRecord.transaction do
+            @group.save!
+            Dwar::Auditing.record!(
+              auditable: @group,
+              action: "create",
+              change_summary: Dwar::Auditing.group_snapshot(@group),
+              actor_type: actor_type,
+              actor_id: actor_id
+            )
+          end
+        rescue ActiveRecord::RecordInvalid => e
+          # Only the group's own validation failure renders the form; an
+          # audit-row failure must propagate (same-transaction rollback,
+          # never silently swallowed).
+          raise unless e.record.equal?(@group)
+
           render :new, status: :unprocessable_entity
+          return
         end
+
+        redirect_to admin_groups_path, notice: "Group was successfully created."
       end
 
       def edit
       end
 
       def update
-        if @group.update(group_params)
-          redirect_to admin_groups_path, notice: "Group was successfully updated."
-        else
+        actor_type, actor_id = Dwar::Auditing.resolve_actor(self)
+        @group.assign_attributes(group_params)
+
+        begin
+          Dwar::ApplicationRecord.transaction do
+            @group.save!
+            Dwar::Auditing.record!(
+              auditable: @group,
+              action: "update",
+              change_summary: Dwar::Auditing.group_update_summary(@group),
+              actor_type: actor_type,
+              actor_id: actor_id
+            )
+          end
+        rescue ActiveRecord::RecordInvalid => e
+          raise unless e.record.equal?(@group)
+
           render :edit, status: :unprocessable_entity
+          return
         end
+
+        redirect_to admin_groups_path, notice: "Group was successfully updated."
       end
 
       def destroy
-        if @group.destroy
+        actor_type, actor_id = Dwar::Auditing.resolve_actor(self)
+        summary = Dwar::Auditing.group_snapshot(@group)
+
+        destroyed = false
+        Dwar::ApplicationRecord.transaction do
+          destroyed = @group.destroy
+          if destroyed
+            # One row for the admin action: cascade-deleted memberships and
+            # flag-group joins are not audited separately.
+            Dwar::Auditing.record!(
+              auditable: @group,
+              action: "destroy",
+              change_summary: summary,
+              actor_type: actor_type,
+              actor_id: actor_id
+            )
+          else
+            # A false destroy changed nothing; roll back (a no-op) without
+            # raising so the alert path below still renders.
+            raise ActiveRecord::Rollback
+          end
+        end
+
+        if destroyed
           redirect_to admin_groups_path, notice: "Group was successfully destroyed."
         else
           redirect_to admin_groups_path, alert: "Group could not be deleted."

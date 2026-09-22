@@ -82,6 +82,9 @@ class MembershipInvalidationTest < ActionDispatch::IntegrationTest
     Dwar::FlagGroup.delete_all
     Dwar::Flag.delete_all
     Dwar::Group.delete_all
+    # T13: controller writes commit audit rows for real here too, so they
+    # need the same explicit cleanup as every other table above.
+    Dwar::Audit.delete_all
     User.delete_all
   end
 end

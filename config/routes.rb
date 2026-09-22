@@ -9,5 +9,6 @@ Dwar::Engine.routes.draw do
       resources :memberships, only: [:index, :create, :destroy]
     end
     resources :users, only: [:index]
+    resources :audits, only: [:index]
   end
 end
