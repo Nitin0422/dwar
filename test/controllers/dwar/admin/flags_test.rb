@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "test_helper"
+require "minitest/mock"
 
 class FlagsAdminTest < ActionDispatch::IntegrationTest
   def setup
@@ -104,6 +105,15 @@ class FlagsAdminTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "bad_pct"
   end
 
+  test "create normalizes out-of-range percentage for a disabled state to zero" do
+    assert_difference("Dwar::Flag.count", 1) do
+      post "/dwar/admin/flags", params: {flag: {key: "disabled_big", state: "disabled", percentage: 101}}
+    end
+
+    assert_redirected_to "/dwar/admin/flags"
+    assert_equal 0, Dwar::Flag.find_by(key: "disabled_big").percentage
+  end
+
   # CRUD: update --------------------------------------------------------
   test "update changes state, percentage, and groups then redirects" do
     flag = Dwar::Flag.create!(key: "mutable", state: "disabled")
@@ -129,6 +139,32 @@ class FlagsAdminTest < ActionDispatch::IntegrationTest
     assert_equal "stays_valid", flag.reload.key
   end
 
+  test "update to a non-percentage state normalizes percentage to zero" do
+    flag = Dwar::Flag.create!(key: "was_pct", state: "percentage", percentage: 50)
+
+    patch "/dwar/admin/flags/#{flag.id}", params: {flag: {state: "disabled", percentage: 101}}
+
+    assert_redirected_to "/dwar/admin/flags"
+    assert_equal "disabled", flag.reload.state
+    assert_equal 0, flag.reload.percentage
+  end
+
+  test "clearing all groups via blank group_ids removes targeting" do
+    flag = Dwar::Flag.create!(key: "clear_groups", state: "groups")
+    group = Dwar::Group.create!(name: "clear_beta")
+    flag.groups << group
+    member = User.create!(name: "clear_member")
+    Dwar::GroupMembership.create!(group: group, actor: member)
+    assert Dwar.enabled?("clear_groups", member)
+
+    # The form's hidden field submits [""] when nothing is selected.
+    patch "/dwar/admin/flags/#{flag.id}", params: {flag: {state: "groups", group_ids: [""]}}
+
+    assert_redirected_to "/dwar/admin/flags"
+    assert_equal [], flag.reload.group_ids
+    refute Dwar.enabled?("clear_groups", member)
+  end
+
   # CRUD: destroy -------------------------------------------------------
   test "destroy removes flag and its joins then redirects" do
     flag = Dwar::Flag.create!(key: "doomed", state: "disabled")
@@ -146,13 +182,31 @@ class FlagsAdminTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "successfully destroyed"
   end
 
-  test "index destroy control carries a confirmation prompt" do
-    Dwar::Flag.create!(key: "confirm_me", state: "disabled")
+  test "destroy failure redirects with an alert instead of claiming success" do
+    flag = Dwar::Flag.create!(key: "stubborn", state: "disabled")
+    def flag.destroy
+      false
+    end
+
+    Dwar::Flag.stub(:find, flag) do
+      delete "/dwar/admin/flags/#{flag.id}"
+    end
+
+    assert_redirected_to "/dwar/admin/flags"
+    follow_redirect!
+    assert_includes response.body, "could not be destroyed"
+    assert Dwar::Flag.exists?(flag.id)
+  end
+
+  test "index destroy control is a form button with confirmation prompt" do
+    flag = Dwar::Flag.create!(key: "confirm_me", state: "disabled")
 
     get "/dwar/admin/flags"
 
     assert_response :success
     assert_includes response.body, "data-turbo-confirm"
+    assert_match %r{<form[^>]*action="/dwar/admin/flags/#{flag.id}"}, response.body
+    assert_includes response.body, 'value="delete"'
   end
 
   # All five states via the UI drive Dwar.enabled? ----------------------
@@ -296,6 +350,17 @@ class FlagsAdminTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "No flags found."
   end
 
+  test "search matches description case-insensitively" do
+    Dwar::Flag.create!(key: "ci_one", description: "Holiday Promo Rollout", state: "disabled")
+    Dwar::Flag.create!(key: "ci_two", description: "ordinary flag", state: "disabled")
+
+    get "/dwar/admin/flags", params: {q: "holiday"}
+
+    assert_response :success
+    assert_includes response.body, "ci_one"
+    assert_not_includes response.body, "ci_two"
+  end
+
   # Authorization regression (T08) --------------------------------------
   test "nil authorization hook denies flags admin with 403" do
     Dwar.reset_config
@@ -305,5 +370,24 @@ class FlagsAdminTest < ActionDispatch::IntegrationTest
 
     get "/dwar/admin/flags/new"
     assert_response :forbidden
+  end
+
+  test "nil authorization hook denies flag writes with 403 and no side effects" do
+    Dwar::Flag.create!(key: "guarded", state: "disabled")
+    guarded = Dwar::Flag.find_by(key: "guarded")
+    Dwar.reset_config
+
+    post "/dwar/admin/flags", params: {flag: {key: "nope"}}
+    assert_response :forbidden
+
+    patch "/dwar/admin/flags/#{guarded.id}", params: {flag: {state: "enabled"}}
+    assert_response :forbidden
+
+    delete "/dwar/admin/flags/#{guarded.id}"
+    assert_response :forbidden
+
+    assert_nil Dwar::Flag.find_by(key: "nope")
+    assert_equal "disabled", guarded.reload.state
+    assert Dwar::Flag.exists?(guarded.id)
   end
 end
