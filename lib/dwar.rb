@@ -3,6 +3,7 @@
 require_relative "dwar/version"
 require_relative "dwar/engine"
 require_relative "dwar/configuration"
+require_relative "dwar/cache"
 require_relative "dwar/bucketing"
 require_relative "dwar/evaluator"
 

@@ -6,11 +6,28 @@ module Dwar
   # Returns +true+ or +false+ for whether a flag is enabled for an actor,
   # never raising regardless of inputs. Delegates all percentage math to
   # Dwar::Bucketing; no hash or bucket logic is duplicated here.
+  #
+  # Results are cached in-process via Dwar::Cache while Dwar.config.cache is
+  # truthy (the default). Committed writes invalidate through model
+  # after_commit hooks; with caching disabled every call re-evaluates.
   module Evaluator
     class << self
       # Returns +true+ or +false+ for whether the flag identified by
       # +flag_key+ is enabled for +actor+. +actor+ is optional and may
       # be omitted for non-percentage checks.
+      #
+      # With caching enabled the result is served from Dwar::Cache keyed by
+      # [flag key, actor type, actor id, generation, flag version]; with
+      # caching disabled the flag is resolved on every call.
+      def enabled?(flag_key, actor = nil)
+        return evaluate(flag_key, actor) unless Dwar.config.cache
+
+        Dwar::Cache.fetch(flag_key, actor) { evaluate(flag_key, actor) }
+      end
+
+      private
+
+      # Core FR-3 resolution (uncached).
       #
       # Resolution order:
       # 1. Unknown flag key -> +false+ (never raises).
@@ -20,7 +37,7 @@ module Dwar
       #    AND +Bucketing.bucket(actor) < percentage+; no actor -> +false+.
       # 5. Group-targeted -> actor must belong to a targeted group AND,
       #    when a percentage is set, +Bucketing.bucket(actor) < percentage+.
-      def enabled?(flag_key, actor = nil)
+      def evaluate(flag_key, actor)
         flag = Dwar::Flag.find_by(key: flag_key.to_s)
         return false unless flag
 
@@ -46,8 +63,6 @@ module Dwar
           false
         end
       end
-
-      private
 
       # Returns the bucket for a valid actor, or +nil+ if the actor's id
       # is nil/empty so that Bucketing is never called with invalid args.
