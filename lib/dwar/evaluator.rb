@@ -80,12 +80,18 @@ module Dwar
 
       # Returns +true+ if +actor+ belongs to any targeted group of the flag.
       # Out-of-contract actors yield +false+ instead of raising, as above.
+      #
+      # actor_id is bound as an explicit String: the column is varchar since
+      # T12, and binding a raw Integer would rely on adapter coercion. On
+      # PostgreSQL an integer bind against a varchar column holding
+      # non-numeric (UUID) ids forces a column-side cast and can raise;
+      # to_s keeps the lookup correct on every adapter.
       def belongs_to_targeted_group?(actor, flag)
         actor_type = actor.class.to_s
         actor_id = actor.id
         return false if actor_id.nil? || actor_id.to_s.empty?
 
-        Dwar::GroupMembership.where(actor_type: actor_type, actor_id: actor_id)
+        Dwar::GroupMembership.where(actor_type: actor_type, actor_id: actor_id.to_s)
           .where(group_id: flag.group_ids)
           .exists?
       rescue

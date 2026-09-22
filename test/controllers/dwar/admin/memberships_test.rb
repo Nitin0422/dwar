@@ -149,6 +149,46 @@ class MembershipsAdminTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "is invalid"
   end
 
+  # H2: engine-internal ActiveRecord classes are never valid actors — the
+  # picker only offers host user records, so Dwar::* types 422 instead of
+  # persisting engine-model memberships.
+  test "create with Dwar::Flag actor_type returns 422" do
+    group = Dwar::Group.create!(name: "beta")
+    flag = Dwar::Flag.create!(key: "feature.x", state: "disabled")
+
+    assert_no_difference("Dwar::GroupMembership.count") do
+      post members_path(group), params: {membership: {actor_id: flag.id, actor_type: "Dwar::Flag"}}
+    end
+
+    assert_response :unprocessable_entity
+    assert_includes response.body, "is invalid"
+  end
+
+  test "create with Dwar::Group actor_type returns 422" do
+    group = Dwar::Group.create!(name: "beta")
+    other = Dwar::Group.create!(name: "gamma")
+
+    assert_no_difference("Dwar::GroupMembership.count") do
+      post members_path(group), params: {membership: {actor_id: other.id, actor_type: "Dwar::Group"}}
+    end
+
+    assert_response :unprocessable_entity
+    assert_includes response.body, "is invalid"
+  end
+
+  test "create with ActiveRecord internal actor_type returns 422" do
+    group = Dwar::Group.create!(name: "beta")
+    user = User.create!(name: "alice")
+
+    assert_no_difference("Dwar::GroupMembership.count") do
+      post members_path(group),
+        params: {membership: {actor_id: user.id, actor_type: "ActiveRecord::SchemaMigration"}}
+    end
+
+    assert_response :unprocessable_entity
+    assert_includes response.body, "is invalid"
+  end
+
   # Unknown group/member ids 404 via the Rails default (RecordNotFound).
   test "index with unknown group returns 404" do
     get "/dwar/admin/groups/999999/memberships"
@@ -293,7 +333,9 @@ class MembershipsAdminTest < ActionDispatch::IntegrationTest
 
   # AC (FR-8 + T07): add/remove take effect on the very next enabled? call.
   # Transactional tests never fire after_commit (outer rollback), so reset!
-  # simulates the commit boundary the invalidation hooks provide.
+  # simulates the commit boundary here. The real hook path — controller
+  # writes invalidating via GroupMembership#invalidate_dwar_cache with no
+  # manual reset — is proven by MembershipInvalidationTest.
   test "membership add and remove flip group-targeted evaluation immediately" do
     group = Dwar::Group.create!(name: "beta")
     flag = Dwar::Flag.create!(key: "feature.x", state: "groups")

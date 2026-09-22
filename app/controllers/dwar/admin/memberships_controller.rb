@@ -72,18 +72,25 @@ module Dwar
       end
 
       # Allowlist guard for the posted actor_type: blank defaults to "User";
-      # anything else must safe_constantize to a real ActiveRecord class.
-      # Arbitrary class names (or garbage) return nil and the action
-      # re-renders with 422 — the string is never constantized blindly and
-      # no record is ever instantiated from it.
+      # anything else must safe_constantize to a concrete, non-internal
+      # ActiveRecord class. Dwar::* engine models (Flag, Group, ...) and
+      # ActiveRecord::* internals (SchemaMigration, ...) are never valid
+      # membership actors — the picker only ever offers host user records
+      # (FR-6/FR-7) — so they 422 like any other unknown type. The string
+      # is never constantized blindly and no record is ever instantiated
+      # from it.
       def resolve_actor_type(raw)
         value = raw.to_s.strip
         value = "User" if value.empty?
         klass = value.safe_constantize
         return nil unless klass.is_a?(Class)
         return nil unless klass <= ActiveRecord::Base
+        return nil if klass.abstract_class?
+        name = klass.name
+        return nil if name.nil?
+        return nil if name.start_with?("Dwar::", "ActiveRecord::")
 
-        klass.name
+        name
       rescue
         nil
       end
@@ -114,7 +121,10 @@ module Dwar
           return {}
         end
 
-        klass.where(id: ids).index_by { |record| record.id.to_s }
+        # Ids come off the string actor_id column, so bind them as strings:
+        # explicit to_s keeps the lookup correct regardless of adapter
+        # coercion rules (mirrors Evaluator/Cache normalization).
+        klass.where(id: ids.map(&:to_s)).index_by { |record| record.id.to_s }
       rescue => e
         # Log class only, never ids or record data (PII).
         Rails.logger.warn("[Dwar] membership lookup failed (#{e.class}); using fallback labels")
@@ -123,9 +133,11 @@ module Dwar
 
       # Defensive label resolution via Dwar.config.user_display, mirroring
       # UsersController: Symbol/String -> public_send, callable -> call,
-      # anything else -> to_s. NameError (unknown method / broken callable
-      # reference — NoMethodError is a NameError) falls back to to_s; any
-      # other host error blanks only this row, never the page.
+      # anything else -> to_s. Any host error blanks only this row via
+      # safe_to_s — never the page. (UsersController differentiates
+      # NameError from other errors because its picker_item skips bad
+      # records; here every failure mode falls back the same way, so a
+      # single rescue branch covers both.)
       def display_label(record, membership)
         display = Dwar.config.user_display || :to_s
         if display.respond_to?(:call)
@@ -135,9 +147,6 @@ module Dwar
         else
           record.to_s
         end
-      rescue NameError => e
-        Rails.logger.warn("[Dwar] user_display failed (#{e.class}); falling back to to_s")
-        safe_to_s(record, membership)
       rescue => e
         Rails.logger.warn("[Dwar] user_display failed (#{e.class}); falling back to to_s")
         safe_to_s(record, membership)

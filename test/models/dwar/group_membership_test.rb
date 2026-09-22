@@ -69,4 +69,20 @@ class GroupMembershipTest < ActiveSupport::TestCase
     refute string_spelling.valid?
     assert_includes string_spelling.errors[:actor_id], "has already been taken"
   end
+
+  # T12/L2: matching is verbatim — a zero-padded spelling ("042") is a
+  # distinct membership from the canonical one ("42"), never conflated.
+  test "zero-padded and canonical actor spellings are distinct memberships" do
+    user = User.create!(name: "alice")
+    Dwar::GroupMembership.create!(group: @group, actor: user)
+
+    padded = Dwar::GroupMembership.new(
+      group: @group, actor_type: "User", actor_id: "0#{user.id}"
+    )
+    assert padded.valid?, "expected 0-padded spelling to coexist, got: #{padded.errors.full_messages}"
+    padded.save!
+
+    assert_equal [user.id.to_s, "0#{user.id}"].sort,
+      @group.group_memberships.pluck(:actor_id).sort
+  end
 end
