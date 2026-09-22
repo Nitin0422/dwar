@@ -7,11 +7,13 @@ require "test_helper"
 # present/absent, plus boundary percentages and nil/empty guard.
 class EvaluationTest < ActiveSupport::TestCase
   def setup
+    Dwar::Cache.reset!
     Dwar.reset_config
     @flag = Dwar::Flag.create!(key: "rollout", state: "percentage", percentage: 50)
   end
 
   def teardown
+    Dwar::Cache.reset!
     Dwar.reset_config
   end
 
@@ -215,8 +217,11 @@ class EvaluationTest < ActiveSupport::TestCase
     Dwar::FlagGroup.create!(flag: flag, group: group)
     user = User.create!(name: "bucket_edge_user")
     Dwar::GroupMembership.create!(group: group, actor: user)
+    # Pin percentage to the actor's own bucket (the equality edge of strict-<).
+    # The previous `if bucket >= 50` guard left percentage at 50 for low-bucket
+    # actors, making the outcome depend on the seed-ordered user.id.
     bucket = Dwar::Bucketing.bucket(flag.key, user.class, user.id)
-    flag.update!(percentage: bucket) if bucket >= 50
+    flag.update!(percentage: bucket)
     refute Dwar.enabled?(flag.key, user)
   end
 
