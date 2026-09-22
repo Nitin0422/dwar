@@ -1,2 +1,74 @@
-<h1>Memberships</h1>
-<p>Admin memberships management.</p>
+<h1>Members of <%= @group.name %></h1>
+
+<p><%= link_to "Back to groups", admin_groups_path %></p>
+
+<% if @membership.errors.any? %>
+  <div id="error_explanation">
+    <h2><%= pluralize(@membership.errors.count, "error") %> prohibited this member from being added:</h2>
+    <ul>
+      <% @membership.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>
+
+<% if @memberships.any? %>
+  <table>
+    <thead>
+      <tr>
+        <th>Member</th>
+        <th>Actor</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @memberships.each do |membership| %>
+        <tr>
+          <td><%= @member_labels[membership.id] %></td>
+          <td><%= membership.actor_type %> #<%= membership.actor_id %></td>
+          <td>
+            <%= button_to "Remove", admin_group_membership_path(@group, membership), method: :delete, form: {data: {turbo_confirm: "Are you sure?"}} %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <p>No members yet.</p>
+<% end %>
+
+<h2>Add member</h2>
+<%= form_with url: admin_group_memberships_path(@group), local: true do %>
+  <%# The actor id comes from the picker hidden field below; actor_type %>
+  <%# defaults to User. See MembershipsController#resolve_actor_type for the %>
+  <%# allowlist guard on the posted type. %>
+  <%= render "dwar/admin/shared/user_picker",
+      url: admin_users_path(format: :json),
+      input_name: "user_search",
+      input_id: "dwar-membership-user-search",
+      hidden_name: "membership[actor_id]",
+      hidden_id: "dwar-membership-actor-id" %>
+  <input type="hidden" name="membership[actor_type]" id="dwar-membership-actor-type" value="User">
+  <div>
+    <%= submit_tag "Add member" %>
+  </div>
+<% end %>
+<%# The picker library (app/assets/javascripts/dwar/user_picker.js) is loaded %>
+<%# by the host per the partial's contract — the same posture as T11's demo %>
+<%# harness, which serves it from a dev-only route. The guarded init below %>
+<%# never throws when the library is absent; the form still submits. %>
+<script>
+  (function() {
+    if (typeof DwarUserPicker === "undefined") { return; }
+    var root = document.querySelector("[data-dwar-user-picker]");
+    if (!root) { return; }
+    DwarUserPicker.init(
+      root.querySelector("[data-dwar-user-picker-input]"),
+      {
+        url: root.dataset.url,
+        hiddenField: root.querySelector("[data-dwar-user-picker-hidden]")
+      }
+    );
+  })();
+</script>

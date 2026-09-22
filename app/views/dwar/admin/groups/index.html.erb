@@ -19,6 +19,7 @@
           <td><%= group.description %></td>
           <td><%= @member_counts[group.id] || 0 %></td>
           <td>
+            <%= link_to "Manage members", admin_group_memberships_path(group) %>
             <%= link_to "Edit", edit_admin_group_path(group) %>
             <%= button_to "Destroy", admin_group_path(group), method: :delete, form: {data: {turbo_confirm: "Are you sure?"}} %>
           </td>

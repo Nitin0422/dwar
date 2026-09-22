@@ -19,7 +19,7 @@ class GroupMembershipTest < ActiveSupport::TestCase
     membership = Dwar::GroupMembership.create!(group: @group, actor: user)
 
     assert_equal "User", membership.actor_type
-    assert_equal user.id, membership.actor_id
+    assert_equal user.id.to_s, membership.actor_id
   end
 
   test "duplicate actor in the same group is invalid" do
@@ -52,6 +52,37 @@ class GroupMembershipTest < ActiveSupport::TestCase
     membership = Dwar::GroupMembership.create!(group: @group, actor: user)
 
     assert_equal user, membership.reload.actor
-    assert_equal user.id, membership.actor_id
+    assert_equal user.id.to_s, membership.actor_id
+  end
+
+  # T12: actor_id is a string column so UUID/string host keys work; integer
+  # ids store as their to_s form and dedupe across int/string spellings.
+  test "actor_id stores as string and dedupes integer and string forms" do
+    assert_equal :string, Dwar::GroupMembership.column_for_attribute(:actor_id).type
+
+    user = User.create!(name: "alice")
+    Dwar::GroupMembership.create!(group: @group, actor: user)
+
+    string_spelling = Dwar::GroupMembership.new(
+      group: @group, actor_type: "User", actor_id: user.id.to_s
+    )
+    refute string_spelling.valid?
+    assert_includes string_spelling.errors[:actor_id], "has already been taken"
+  end
+
+  # T12/L2: matching is verbatim — a zero-padded spelling ("042") is a
+  # distinct membership from the canonical one ("42"), never conflated.
+  test "zero-padded and canonical actor spellings are distinct memberships" do
+    user = User.create!(name: "alice")
+    Dwar::GroupMembership.create!(group: @group, actor: user)
+
+    padded = Dwar::GroupMembership.new(
+      group: @group, actor_type: "User", actor_id: "0#{user.id}"
+    )
+    assert padded.valid?, "expected 0-padded spelling to coexist, got: #{padded.errors.full_messages}"
+    padded.save!
+
+    assert_equal [user.id.to_s, "0#{user.id}"].sort,
+      @group.group_memberships.pluck(:actor_id).sort
   end
 end

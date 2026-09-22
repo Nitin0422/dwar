@@ -16,12 +16,21 @@ class SectionsTest < ActionDispatch::IntegrationTest
   end
 
   # AC: With an allow hook, each stub section returns 200.
-  ["/dwar", "/dwar/admin/flags", "/dwar/admin/groups", "/dwar/admin/memberships"].each do |path|
+  ["/dwar", "/dwar/admin/flags", "/dwar/admin/groups"].each do |path|
     test "#{path} returns 200" do
       get path
 
       assert_response :success
     end
+  end
+
+  # AC: The nested per-group memberships screen returns 200.
+  test "/dwar/admin/groups/:id/memberships returns 200" do
+    group = Dwar::Group.create!(name: "beta")
+
+    get "/dwar/admin/groups/#{group.id}/memberships"
+
+    assert_response :success
   end
 
   # AC (T11 picker contract): users#index invokes the configured finder
@@ -54,7 +63,9 @@ class SectionsTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "<style>"
   end
 
-  # AC: Every nav href starts with /dwar/.
+  # AC: Every nav href starts with /dwar/. Memberships live under their
+  # group (no flat /dwar/admin/memberships nav entry); the groups index
+  # links each row to its nested member list instead.
   test "all nav links start with /dwar/" do
     get "/dwar/admin/flags"
 
@@ -62,7 +73,17 @@ class SectionsTest < ActionDispatch::IntegrationTest
     assert_match %r{href="/dwar/}, response.body
     assert_match %r{href="/dwar/admin/flags}, response.body
     assert_match %r{href="/dwar/admin/groups}, response.body
-    assert_match %r{href="/dwar/admin/memberships}, response.body
     assert_match %r{href="/dwar/admin/users}, response.body
+    assert_no_match %r{href="/dwar/admin/memberships}, response.body
+  end
+
+  test "groups index links each row to its nested member list" do
+    Dwar::Group.create!(name: "beta")
+
+    get "/dwar/admin/groups"
+
+    assert_response :success
+    assert_match %r{/dwar/admin/groups/\d+/memberships}, response.body
+    assert_includes response.body, "Manage members"
   end
 end

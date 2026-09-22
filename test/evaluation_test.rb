@@ -2,6 +2,18 @@
 
 require "test_helper"
 
+# Test-only stand-in for a host model with UUID string primary keys. The
+# dummy User model has integer ids, so it cannot represent UUID actors;
+# membership rows for this type are written with validate: false because
+# the dummy schema has no backing UuidUser table to satisfy belongs_to.
+class UuidUser
+  attr_reader :id
+
+  def initialize(id)
+    @id = id
+  end
+end
+
 # Table-driven coverage of Dwar.enabled? implementing FR-3 resolution.
 # Tests all flag states x actor present/absent x membership
 # present/absent, plus boundary percentages and nil/empty guard.
@@ -266,5 +278,20 @@ class EvaluationTest < ActiveSupport::TestCase
     user = User.create!(name: "norm_test")
     flag = Dwar::Flag.create!(key: "norm_test", state: "percentage", percentage: 100)
     assert Dwar.enabled?(flag.key, user)
+  end
+
+  # H3: non-integer (UUID) string actor ids round-trip through the
+  # explicitly to_s-normalized evaluator query — member resolves true,
+  # a different UUID resolves false, with no adapter coercion involved.
+  test "uuid string actor ids round-trip through group evaluation" do
+    flag = Dwar::Flag.create!(key: "uuid_flag", state: "groups")
+    group = Dwar::Group.create!(name: "uuid_beta")
+    Dwar::FlagGroup.create!(flag: flag, group: group)
+    uuid = "550e8400-e29b-41d4-a716-446655440000"
+    membership = Dwar::GroupMembership.new(group: group, actor_type: "UuidUser", actor_id: uuid)
+    membership.save!(validate: false)
+
+    assert Dwar.enabled?(flag.key, UuidUser.new(uuid))
+    refute Dwar.enabled?(flag.key, UuidUser.new("6ba7b810-9dad-11d1-80b4-00c04fd430c8"))
   end
 end

@@ -12,8 +12,10 @@ class AuthorizationTest < ActionDispatch::IntegrationTest
   end
 
   # AC: With no authorization hook configured, every admin route
-  # denies access (fail closed) — 403 + clear deny message.
-  ["/dwar", "/dwar/admin/flags", "/dwar/admin/groups", "/dwar/admin/memberships", "/dwar/admin/users"].each do |path|
+  # denies access (fail closed) — 403 + clear deny message. Memberships are
+  # nested under their group; auth runs before the group lookup, so no
+  # group fixture is needed for the deny path.
+  ["/dwar", "/dwar/admin/flags", "/dwar/admin/groups", "/dwar/admin/groups/1/memberships", "/dwar/admin/users"].each do |path|
     test "no hook configured: #{path} denies access with 403" do
       get path
 
@@ -27,7 +29,7 @@ class AuthorizationTest < ActionDispatch::IntegrationTest
   test "hook returning false denies all admin paths with 403" do
     Dwar.configure { |c| c.authorization = ->(_controller) { false } }
 
-    ["/dwar", "/dwar/admin/flags", "/dwar/admin/groups", "/dwar/admin/memberships", "/dwar/admin/users"].each do |path|
+    ["/dwar", "/dwar/admin/flags", "/dwar/admin/groups", "/dwar/admin/groups/1/memberships", "/dwar/admin/users"].each do |path|
       get path
 
       assert_response :forbidden
