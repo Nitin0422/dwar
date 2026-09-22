@@ -5,8 +5,9 @@ Dwar::Engine.routes.draw do
 
   namespace :admin do
     resources :flags, only: [:index, :new, :create, :edit, :update, :destroy]
-    resources :groups, except: [:show]
-    resources :memberships, only: [:index]
+    resources :groups, except: [:show] do
+      resources :memberships, only: [:index, :create, :destroy]
+    end
     resources :users, only: [:index]
   end
 end
