@@ -1,0 +1,42 @@
+<%= form_with model: [:admin, @flag], local: true do |form| %>
+  <% if @flag.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(@flag.errors.count, "error") %> prohibited this flag from being saved:</h2>
+      <ul>
+        <% @flag.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div>
+    <%= form.label :key %>
+    <%= form.text_field :key %>
+  </div>
+
+  <div>
+    <%= form.label :description %>
+    <%= form.text_area :description %>
+  </div>
+
+  <div>
+    <%= form.label :state %>
+    <%= form.select :state, Dwar::Flag.states.keys %>
+  </div>
+
+  <div>
+    <%= form.label :percentage %>
+    <%= form.number_field :percentage, in: 0..100 %>
+  </div>
+
+  <div>
+    <%= form.label :group_ids, "Groups" %>
+    <%= hidden_field_tag "flag[group_ids][]", "" %>
+    <%= form.collection_select :group_ids, Dwar::Group.order(:name), :id, :name, {}, {multiple: true} %>
+  </div>
+
+  <div>
+    <%= form.submit %>
+  </div>
+<% end %>
