@@ -66,16 +66,20 @@ module Dwar
 
       # Returns the bucket for a valid actor, or +nil+ if the actor's id
       # is nil/empty so that Bucketing is never called with invalid args.
+      # Out-of-contract actors (e.g. objects without an id) also yield +nil+
+      # instead of raising, preserving the never-raise contract and matching
+      # the cache's defensive key normalization.
       def safe_bucket(flag, actor)
         actor_id = actor.id
         return nil if actor_id.nil? || actor_id.to_s.empty?
 
         Dwar::Bucketing.bucket(flag.key, actor.class, actor_id)
-      rescue ArgumentError
+      rescue
         nil
       end
 
       # Returns +true+ if +actor+ belongs to any targeted group of the flag.
+      # Out-of-contract actors yield +false+ instead of raising, as above.
       def belongs_to_targeted_group?(actor, flag)
         actor_type = actor.class.to_s
         actor_id = actor.id
@@ -84,6 +88,8 @@ module Dwar
         Dwar::GroupMembership.where(actor_type: actor_type, actor_id: actor_id)
           .where(group_id: flag.group_ids)
           .exists?
+      rescue
+        false
       end
     end
   end

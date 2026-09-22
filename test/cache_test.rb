@@ -157,6 +157,33 @@ class CacheTest < ActiveSupport::TestCase
     assert Dwar.enabled?("flag_one", user)
   end
 
+  test "renaming a flag key invalidates both the old and new keys" do
+    flag = Dwar::Flag.create!(key: "old_key", state: "enabled")
+    assert Dwar.enabled?("old_key")
+    refute Dwar.enabled?("new_key")
+
+    flag.update!(key: "new_key")
+
+    refute Dwar.enabled?("old_key")
+    assert Dwar.enabled?("new_key")
+  end
+
+  test "moving a flag-group join to another flag invalidates both flags" do
+    flag_one = Dwar::Flag.create!(key: "join_one", state: "groups")
+    flag_two = Dwar::Flag.create!(key: "join_two", state: "groups")
+    group = Dwar::Group.create!(name: "shared")
+    user = User.create!(name: "member")
+    Dwar::GroupMembership.create!(group: group, actor: user)
+    join = Dwar::FlagGroup.create!(flag: flag_one, group: group)
+    assert Dwar.enabled?("join_one", user)
+    refute Dwar.enabled?("join_two", user)
+
+    join.update!(flag: flag_two)
+
+    refute Dwar.enabled?("join_one", user)
+    assert Dwar.enabled?("join_two", user)
+  end
+
   test "creating a membership flips group-gated evaluation immediately" do
     flag = Dwar::Flag.create!(key: "mem_flag", state: "groups")
     group = Dwar::Group.create!(name: "g3")
@@ -261,6 +288,26 @@ class CacheTest < ActiveSupport::TestCase
     assert_equal generation, Dwar::Cache.generation
     assert_equal misses, Dwar::Cache.misses
     refute Dwar.enabled?("rollback_flag")
+    assert_equal 1, Dwar::Cache.hits
+  end
+
+  test "rolled back membership creates invalidate nothing" do
+    flag = Dwar::Flag.create!(key: "mem_rollback", state: "groups")
+    group = Dwar::Group.create!(name: "rb_group")
+    Dwar::FlagGroup.create!(flag: flag, group: group)
+    user = User.create!(name: "rb_user")
+    refute Dwar.enabled?("mem_rollback", user)
+    generation = Dwar::Cache.generation
+    misses = Dwar::Cache.misses
+
+    Dwar::GroupMembership.transaction do
+      Dwar::GroupMembership.create!(group: group, actor: user)
+      raise ActiveRecord::Rollback
+    end
+
+    assert_equal generation, Dwar::Cache.generation
+    assert_equal misses, Dwar::Cache.misses
+    refute Dwar.enabled?("mem_rollback", user)
     assert_equal 1, Dwar::Cache.hits
   end
 
@@ -406,6 +453,20 @@ class CacheTest < ActiveSupport::TestCase
     assert_cached_matches_uncached("pct_actorless", nil)
     assert_cached_matches_uncached("pct_actorless", User.new)
     assert_cached_matches_uncached("grp_actorless", nil)
+  end
+
+  test "actors without an id method never raise and agree cached and uncached" do
+    stranger = Object.new
+    Dwar::Flag.create!(key: "pct_stranger", state: "percentage", percentage: 100)
+    Dwar::Flag.create!(key: "grp_stranger", state: "groups")
+
+    assert_nothing_raised { Dwar.enabled?("pct_stranger", stranger) }
+    assert_nothing_raised { Dwar.enabled?("grp_stranger", stranger) }
+    refute Dwar.enabled?("pct_stranger", stranger)
+    refute Dwar.enabled?("grp_stranger", stranger)
+
+    assert_cached_matches_uncached("pct_stranger", stranger)
+    assert_cached_matches_uncached("grp_stranger", stranger)
   end
 
   private

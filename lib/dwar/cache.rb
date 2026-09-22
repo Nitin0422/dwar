@@ -10,20 +10,25 @@ module Dwar
   # versions of the flags they touch, so the next evaluation after any
   # committed write recomputes instead of serving stale data.
   #
-  # Invalidation is coarse and correct by design: any write discards every
-  # cached entry process-wide via the generation bump; per-flag versions add
-  # granularity for future selective invalidation. Entries live in a plain
-  # Hash, so stale entries linger until overwritten — unbounded growth is
-  # accepted for this in-process cache. Multi-process caching is out of scope
-  # by design (each process holds its own copy).
+  # Invalidation is coarse and correct by design: any write evicts every
+  # cached entry process-wide (entries are cleared and the generation is
+  # bumped under the same lock); per-flag versions add granularity for future
+  # selective invalidation. Multi-process caching is out of scope by design
+  # (each process holds its own copy).
+  #
+  # Caveat: invalidation fires from ActiveRecord after_commit hooks, so writes
+  # that bypass callbacks (update_column, update_all, delete_all, raw SQL)
+  # leave stale entries behind until the next invalidating write.
   #
   # All state is guarded by a single Mutex, and the lock is never held while
   # the fetch block runs (the block hits the database), so concurrent readers
   # cannot deadlock. A computation that races with an invalidation is
   # discarded instead of stored.
   #
-  # The counters and reset! below are internal test instrumentation, not
-  # public API (same standing as Dwar.reset_config).
+  # The counters, clear and reset! below are internal test instrumentation,
+  # not public API (same standing as Dwar.reset_config). reset! replaces the
+  # lock object itself and is therefore not thread-safe: call it only when no
+  # other thread is evaluating.
   module Cache
     # Sentinel distinguishing a cached +false+ from a cache miss.
     CACHE_MISS = Object.new
@@ -60,15 +65,20 @@ module Dwar
         result
       end
 
-      # Bumps the versions of +flag_keys+ and the global generation, so both
-      # targeted entries and every other entry invalidate. Always bumps the
-      # generation, even for an empty key list, so callers that could not
-      # resolve keys (e.g. after a cascade destroy) still invalidate.
+      # Bumps the versions of +flag_keys+ and the global generation while
+      # evicting every stored entry, so both targeted entries and every other
+      # entry invalidate and stale generations never accumulate in the store.
+      # Always bumps the generation, even for an empty key list, so callers
+      # that could not resolve keys (e.g. after a cascade destroy) still
+      # invalidate.
       def bump_flags(flag_keys)
         keys = Array(flag_keys).compact.map(&:to_s)
         mutex.synchronize do
           keys.each { |k| @versions[k] = (@versions[k] || 0) + 1 }
           @generation += 1
+          # Inline the eviction (rather than calling clear) because Mutex is
+          # not reentrant.
+          @store.clear
         end
       end
 
@@ -101,14 +111,15 @@ module Dwar
         mutex.synchronize { @generation }
       end
 
-      # Internal: drops cached entries only; versions, generation and
-      # counters are preserved.
+      # Internal, test-only: drops cached entries without touching versions,
+      # generation or counters.
       def clear
         mutex.synchronize { @store.clear }
       end
 
-      # Internal: full reset for test isolation — entries, versions,
-      # generation and counters.
+      # Internal, test-only: full reset for test isolation — entries,
+      # versions, generation and counters. Not thread-safe (replaces the
+      # lock); call only when no other thread is evaluating.
       def reset!
         @mutex = Mutex.new
         @store = {}
