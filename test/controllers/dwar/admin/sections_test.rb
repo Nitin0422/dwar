@@ -5,7 +5,10 @@ require "test_helper"
 class SectionsTest < ActionDispatch::IntegrationTest
   def setup
     Dwar.reset_config
-    Dwar.configure { |c| c.authorization = ->(_controller) { true } }
+    Dwar.configure do |c|
+      c.authorization = ->(_controller) { true }
+      c.user_finder = ->(_query) { [] }
+    end
   end
 
   def teardown
@@ -21,8 +24,9 @@ class SectionsTest < ActionDispatch::IntegrationTest
     end
   end
 
-  # AC: users#index returns json: [].
-  test "users index returns empty json array" do
+  # AC (T11 picker contract): users#index invokes the configured finder
+  # and renders its records as json (empty here because the stub finds none).
+  test "users index returns finder results as json array" do
     get "/dwar/admin/users"
 
     assert_response :success

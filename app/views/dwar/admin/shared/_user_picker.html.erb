@@ -1,0 +1,42 @@
+<%# frozen_string_literal: true %>
+<%# Dwar admin user picker wiring example (T11) for T12 membership screens. %>
+<%# %>
+<%# Minimal markup contract for DwarUserPicker.init(input, {url:, hiddenField:}): %>
+<%# - visible text input: [data-dwar-user-picker-input], the admin types into %>
+<%# - hidden input: [data-dwar-user-picker-hidden], receives the selected id %>
+<%# - results list: [data-dwar-user-picker-list] (<ul>, selectable options) %>
+<%# %>
+<%# Locals (all optional with sensible defaults): %>
+<%# - url: picker endpoint (default: admin_users_path(format: :json)) %>
+<%# - input_name: name for the visible input (default: "user_search") %>
+<%# - hidden_name: name for the hidden id input (default: "user_id") %>
+<%# - input_id: DOM id for the visible input (default: "dwar-user-search") %>
+<%# - hidden_id: DOM id for the hidden input (default: "dwar-user-id") %>
+<%# %>
+<%# Serves GET /dwar/admin/users.json?q= via the existing %>
+<%# resources :users, only: [:index] route (format negotiation, no new route). %>
+<%# Load app/assets/javascripts/dwar/user_picker.js on the consuming page, then: %>
+<%#   DwarUserPicker.init( %>
+<%#     document.querySelector("[data-dwar-user-picker-input]"), %>
+<%#     { url: ".../users.json", %>
+<%#       hiddenField: document.querySelector("[data-dwar-user-picker-hidden]") } %>
+<%#   ); %>
+<div data-dwar-user-picker>
+  <input
+    type="text"
+    name="<%= local_assigns.fetch(:input_name, "user_search") %>"
+    id="<%= local_assigns.fetch(:input_id, "dwar-user-search") %>"
+    data-dwar-user-picker-input
+    autocomplete="off"
+    role="combobox"
+    aria-expanded="false"
+    placeholder="Search users…"
+  >
+  <input
+    type="hidden"
+    name="<%= local_assigns.fetch(:hidden_name, "user_id") %>"
+    id="<%= local_assigns.fetch(:hidden_id, "dwar-user-id") %>"
+    data-dwar-user-picker-hidden
+  >
+  <ul data-dwar-user-picker-list role="listbox" style="list-style: none; margin: 0.25rem 0 0; padding: 0;"></ul>
+</div>
