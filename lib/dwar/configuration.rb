@@ -32,9 +32,10 @@ module Dwar
       # Example: c.user_finder = ->(query) { User.search(query) }
       @user_finder = nil
 
-      # user_display: method name used to render user picker labels.
-      # Type: Symbol method name (T11 interprets symbol-vs-callable later).
-      # Default: :to_s. Example: c.user_display = :display_name
+      # user_display: how picker labels and membership lists render a record.
+      # Type: Symbol/String method name (sent to the record) or callable
+      # (called with the record). Default: :to_s.
+      # Example: c.user_display = :display_name
       @user_display = :to_s
 
       # admin_path: path the engine mounts its admin UI at (consumed by T08

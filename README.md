@@ -32,7 +32,8 @@ bin/rails db:migrate
 
 The generator copies the engine migrations into `db/migrate` (skipping ones
 already present, so re-runs never duplicate) and generates
-`config/initializers/dwar.rb` with every option commented. It then prints the
+`config/initializers/dwar.rb` with every option commented (skipped when
+already present, so re-runs never clobber host edits). It then prints the
 recommended next steps, including the mount line.
 
 Mount the engine in `config/routes.rb` (host-side — the engine never mounts
@@ -49,8 +50,12 @@ Configure the user picker in `config/initializers/dwar.rb`:
 
 ```ruby
 Dwar.configure do |config|
-  # Required only when the user picker endpoint is used:
-  config.user_finder = ->(query) { User.where("name LIKE ?", "%#{query}%").limit(50) }
+  # Required only when the user picker endpoint is used
+  # (sanitize LIKE wildcards, then scope and cap inside the finder itself):
+  config.user_finder = ->(query) {
+    pattern = "%#{ActiveRecord::Base.sanitize_sql_like(query)}%"
+    User.where("name LIKE ?", pattern).order(:name).limit(50)
+  }
   config.user_display = :name
 
   # Fail-closed admin gate — without this, every admin request is denied:
@@ -79,7 +84,7 @@ generated `config/initializers/dwar.rb` shows the same defaults as comments.
 
 | Option | Type | Default | Meaning / example |
 |---|---|---|---|
-| `user_finder` | callable `->(query) { users }` | `nil` | How the user picker (`GET .../admin/users.json?q=…`) looks up records. Receives a query `String`, returns any enumerable of records responding to `id`. Hosts should scope and cap inside the finder itself (e.g. a `LIMIT` query) — the endpoint only bounds the JSON body (50 items). Unset → the endpoint returns `503 "user_finder not configured"`, never a 500. A raising finder returns `[]` plus a logged warning, never a 500. Example: `config.user_finder = ->(query) { User.search(query) }` |
+| `user_finder` | callable `->(query) { users }` | `nil` | How the user picker (`GET .../admin/users.json?q=…`) looks up records. Receives a query `String`, returns any enumerable of records responding to `id`. Hosts should scope and cap inside the finder itself (e.g. a `LIMIT` query) — the endpoint only bounds the JSON body (50 items). Unset → the endpoint returns `503 "user_finder not configured"`. A raising finder returns `[]` plus a logged warning — never a 500 for StandardError failures (fatal errors still propagate by design). Example: `config.user_finder = ->(query) { User.search(query) }` |
 | `user_display` | method name (`Symbol`/`String`) or callable | `:to_s` | How picker labels and membership lists render a record. A `Symbol`/`String` is sent to the record (`record.public_send(display)`); a callable is called with the record (`display.call(record)`). `nil` falls back to `:to_s`. An unknown method name falls back to `to_s` with a logged warning; any other per-record failure skips just that record. Example: `config.user_display = :display_name` |
 | `admin_path` | `String` | `"/dwar"` | The path the admin UI is expected at. Informational — the host still mounts the engine explicitly (`mount Dwar::Engine => "/dwar"`). Example: `config.admin_path = "/admin/dwar"` (and mount there) |
 | `authorization` | callable `->(controller) { bool }` | `nil` | Gatekeeper for the whole admin UI, evaluated with the admin controller as context (so it can call host helpers like `current_user`). `nil`/non-callable → every request denied (`403` fail-closed). Falsy result → `403`. A raising hook propagates as a 500 (fail-loud, never fail-open). Example: `config.authorization = ->(controller) { controller.current_user.admin? }` |
@@ -109,15 +114,17 @@ Percentage math is deterministic per actor: the same actor + flag always lands
 in the same bucket (`0..99`), so raising the percentage only shifts the cutoff
 — no flickering. At `100`, every actor with a stable id passes (max bucket is
 99); at `0`, everyone fails. The `percentage` column is only meaningful for the
-`percentage` and `groups_and_percentage` states; other states reset it to `0`
-on write.
+`percentage` and `groups_and_percentage` states; other states ignore it at
+evaluation time, and the admin flags controller resets it to `0` on write so
+a stale value submitted via the UI can never persist silently (direct model
+writes bypass this normalization — there is no model callback).
 
 Details: [Architecture](docs/ARCHITECTURE.md#flag-evaluation-fr-3-t06) and
 [bucketing contract](docs/ARCHITECTURE.md#deterministic-bucketing-fr-4-t05).
 
 ## Admin UI
 
-Server-rendered, no build step. Engine root (`/`) redirects to the flags index.
+Server-rendered, no build step. Engine root (`/`) routes to the flags index.
 
 - **Flags** (`/admin/flags`): CRUD + search by key/description substring; per-flag
   state and targeting summary (percentage value, targeted group names); create
@@ -129,7 +136,8 @@ Server-rendered, no build step. Engine root (`/`) redirects to the flags index.
   longer resolve render with a label fallback instead of crashing.
 - **User picker** (`/admin/users.json?q=…`): JSON `[{id, label}, …]` from
   `user_finder`, labels via `user_display`; vanilla-JS autocomplete in a single
-  shipped file (`app/assets/javascripts/dwar/user_picker.js`).
+  shipped file (`app/assets/javascripts/dwar/user_picker.js`) — mousedown/Enter
+  selects into the visible label + hidden id.
 - **Audits** (`/admin/audits`): newest-first list (capped at 200 rows) of who
   changed what, when.
 

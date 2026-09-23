@@ -66,8 +66,8 @@ Public API: `Dwar.enabled?(flag_key, actor = nil)` → boolean, never raises
 Defensive rules preserving the never-raise contract: actors with nil/blank
 ids, or objects without an `id`, yield `false` instead of raising (bucketing
 is never called with invalid args; membership lookup binds `to_s`); the cache
-key normalization mirrors this. Uncached evaluation is single-digit-ms DB
-lookups (flag row, then at most one membership `EXISTS` query).
+key normalization mirrors this. Uncached evaluation is at most two cheap DB
+lookups: one flag row, then at most one membership `EXISTS` query.
 
 ## Deterministic bucketing (FR-4, T05)
 
@@ -165,15 +165,16 @@ admin controllers — **not** model callbacks:
   (`AuditsController#index`) is read-only, newest-first, capped at 200 rows
   (pagination deferred), with best-effort record labels batched per auditable
   type (destroyed records render as `"Type #id (removed)"`, never a crash) and
-  actor labels (`"User #1"`, em dash for null actors).
+  actor labels (`"User #1"`, em dash when `actor_type` is blank).
 
 ## Admin JS footprint
 
 Exactly one shipped JS file: `app/assets/javascripts/dwar/user_picker.js`
 (vanilla JS, no framework, no build step). `DwarUserPicker.init(input, {url,
 hiddenField, list?, debounceMs?})` debounces keystrokes (default 200ms, `0`
-disables), fetches `url?q=…` (appending with `?`/`&` as needed), renders a
-selectable list (click/Enter selects into the visible label + hidden id;
+disables the delay — the lookup still runs asynchronously via
+`setTimeout(fn, 0)`), fetches `url?q=…` (appending with `?`/`&` as needed), renders a
+selectable list (mousedown/Enter selects into the visible label + hidden id;
 arrows/Escape navigate/dismiss), guards responses with a monotonic request
 token so a slow earlier response never overwrites newer results, and never
 throws — empty queries and fetch/parse failures render the empty state. The
