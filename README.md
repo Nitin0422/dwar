@@ -1,23 +1,16 @@
 # dwar
 
-Managed feature flags for Rails: full enable/disable, deterministic percentage
-rollouts, and group-based user targeting — administered through a
-server-rendered web UI and queried through a simple developer API
-(`Dwar.enabled?`).
+Dwar is a mountable Rails engine for feature flags. Define flags in a built-in
+admin UI, roll them out to everyone, to a percentage of users, or to specific
+groups of users, and check them from your application code with a single call:
+`Dwar.enabled?(:my_flag, current_user)`. All flag state lives in your own
+database — no external services, no JavaScript build step.
 
-`dwar` is a mountable Rails engine (isolated `Dwar` namespace) packaged as an
-open-source MIT gem. All state lives in the host application's database via
-documented migrations. No external services, no JS build step, no secrets.
+- **Requirements:** Rails `>= 7.1` · Ruby `>= 3.2`
 
-- **Support matrix:** Rails `>= 7.1` (CI tests 7.1, 7.2, 8.0) · Ruby `>= 3.2`
-  (CI tests 3.2, 3.3, 3.4)
-- **Docs:** [Architecture](docs/ARCHITECTURE.md) · [Contributing](CONTRIBUTING.md)
+## Install
 
-## Quickstart (UF-1)
-
-These steps work verbatim against the bundled dummy app in `test/dummy`
-(which mounts the engine at `/dwar` and has a `User` model with a `name`
-column). The published-gem cross-check against a fresh app is covered in T17.
+Add the gem and install it:
 
 ```ruby
 # Gemfile
@@ -30,125 +23,137 @@ bin/rails generate dwar:install
 bin/rails db:migrate
 ```
 
-The generator copies the engine migrations into `db/migrate` (skipping ones
-already present, so re-runs never duplicate) and generates
-`config/initializers/dwar.rb` with every option commented (skipped when
-already present, so re-runs never clobber host edits). It then prints the
-recommended next steps, including the mount line.
+The generator copies Dwar's migrations into your app and creates
+`config/initializers/dwar.rb` with every option shown and commented out.
+Re-running it never duplicates migrations or overwrites your edits.
 
-Mount the engine in `config/routes.rb` (host-side — the engine never mounts
-itself):
+Mount the engine in `config/routes.rb`:
 
 ```ruby
 mount Dwar::Engine => "/dwar"
 ```
 
-`config.admin_path` (default `"/dwar"`) documents the *expected* path; the
-mount line above is what actually exposes the admin UI there.
+Then open the admin UI at `http://localhost:3000/dwar`.
 
-Configure the user picker in `config/initializers/dwar.rb`:
+## Configure
+
+Edit `config/initializers/dwar.rb`. The two settings most apps need are the
+user picker (used when adding group members in the admin UI) and the admin
+gate:
 
 ```ruby
 Dwar.configure do |config|
-  # Required only when the user picker endpoint is used
-  # (sanitize LIKE wildcards, then scope and cap inside the finder itself):
+  # How the admin user picker searches your users. Receives a query string,
+  # returns user records. Keep the LIKE pattern sanitized, scoped, and capped:
   config.user_finder = ->(query) {
     pattern = "%#{ActiveRecord::Base.sanitize_sql_like(query)}%"
     User.where("name LIKE ?", pattern).order(:name).limit(50)
   }
   config.user_display = :name
 
-  # Fail-closed admin gate — without this, every admin request is denied:
+  # Who may open the admin UI. Without this, every admin request is denied:
   config.authorization = ->(controller) { controller.current_user.admin? }
 end
 ```
 
-Evaluate flags in application code:
+See the full option list under [Configuration](#configuration) below.
+
+## Use flags in your code
+
+1. Open the admin UI and create a flag, e.g. `new_checkout`. New flags start
+   disabled, so they evaluate to `false` right away.
+2. Check the flag wherever you need the branch:
 
 ```ruby
-Dwar.enabled?(:new_checkout)                 # no actor — true only when fully enabled
-Dwar.enabled?(:new_checkout, current_user)   # percentage / group checks need an actor
+if Dwar.enabled?(:new_checkout, current_user)
+  render :new_checkout
+else
+  render :classic_checkout
+end
 ```
 
-Then open the admin UI at the mount path (e.g. `http://localhost:3000/dwar`):
-create a flag (default state: disabled, evaluates `false` immediately), roll
-it out via percentage or group targeting, and disable it again as a kill
-switch. Changes take effect on the next `enabled?` call — no deploy, no
-restart.
+Pass the signed-in user (or any object with a stable `id`) whenever the flag
+might use percentage or group targeting. For a simple on/off flag, the actor
+is optional:
 
-## Configuration reference (FR-11)
+```ruby
+Dwar.enabled?(:maintenance_banner)                 # fully enabled => true
+Dwar.enabled?(:new_checkout, current_user)          # percentage/group checks need an actor
+```
 
-A single initializer exposes every option. All options are optional at boot;
-`user_finder` is required only when the picker endpoint is exercised. The
-generated `config/initializers/dwar.rb` shows the same defaults as comments.
+Flag keys may contain lowercase letters, numbers, `_`, `/`, `.`, and `-`
+(e.g. `checkout/new_flow`, `search-v2`).
 
-| Option | Type | Default | Meaning / example |
-|---|---|---|---|
-| `user_finder` | callable `->(query) { users }` | `nil` | How the user picker (`GET .../admin/users.json?q=…`) looks up records. Receives a query `String`, returns any enumerable of records responding to `id`. Hosts should scope and cap inside the finder itself (e.g. a `LIMIT` query) — the endpoint only bounds the JSON body (50 items). Unset → the endpoint returns `503 "user_finder not configured"`. A raising finder returns `[]` plus a logged warning — never a 500 for StandardError failures (fatal errors still propagate by design). Example: `config.user_finder = ->(query) { User.search(query) }` |
-| `user_display` | method name (`Symbol`/`String`) or callable | `:to_s` | How picker labels and membership lists render a record. A `Symbol`/`String` is sent to the record (`record.public_send(display)`); a callable is called with the record (`display.call(record)`). `nil` falls back to `:to_s`. An unknown method name falls back to `to_s` with a logged warning; any other per-record failure skips just that record. Example: `config.user_display = :display_name` |
-| `admin_path` | `String` | `"/dwar"` | The path the admin UI is expected at. Informational — the host still mounts the engine explicitly (`mount Dwar::Engine => "/dwar"`). Example: `config.admin_path = "/admin/dwar"` (and mount there) |
-| `authorization` | callable `->(controller) { bool }` | `nil` | Gatekeeper for the whole admin UI, evaluated with the admin controller as context (so it can call host helpers like `current_user`). `nil`/non-callable → every request denied (`403` fail-closed). Falsy result → `403`. A raising hook propagates as a 500 (fail-loud, never fail-open). Example: `config.authorization = ->(controller) { controller.current_user.admin? }` |
-| `cache` | Boolean | `true` | Whether `Dwar.enabled?` results are served from the in-process evaluation cache. `false` re-evaluates on every call. See [Architecture](docs/ARCHITECTURE.md#evaluation-caching-t07) |
-| `audit_actor` | optional callable `->(controller) { identity }` | `nil` | How admin writes are attributed in the audit trail, evaluated in the admin controller context (same contract as `authorization`, so apps can reuse `current_user`). `nil`/non-callable or a falsy return → null actor (`actor_type`/`actor_id` NULL). A raising hook propagates — the write never commits unattributed-by-accident. Example: `config.audit_actor = ->(controller) { controller.current_user }` |
+## How flags work
 
-`Dwar.configure` builds a fresh instance per call, so configuration never leaks
-between apps or between configure blocks. Reading `Dwar.config` before any
-`configure` call returns a frozen default instance; `Dwar.reset_config` drops
-the memoized config (internal test/dev support, not public API).
+Each flag is in exactly one state:
 
-## Evaluation summary (FR-3)
+| State | Meaning |
+|---|---|
+| `disabled` | Off for everyone. This is also a kill switch: flip a misbehaving flag back to `disabled` and it turns off immediately. |
+| `enabled` | On for everyone, no user needed. |
+| `percentage` | On for a fixed percentage of users (e.g. `25` = roughly a quarter of users). |
+| `groups` | On only for users who belong to one of the flag's groups. |
+| `groups_and_percentage` | On for users who belong to one of the flag's groups **and** fall inside the percentage. |
 
-`Dwar.enabled?(flag_key, actor = nil)` returns a boolean and never raises.
-Resolution order:
+When you call `Dwar.enabled?`, the flag is resolved in this order:
 
 1. Unknown flag key → `false`.
 2. `disabled` → `false`.
-3. `enabled` → `true` (actor not needed).
-4. `percentage` → `true` iff an actor with a stable non-blank `id` is supplied
-   **and** `bucket(actor) < percentage`; no actor → `false`.
-5. `groups` → `true` iff the actor belongs to a targeted group; no bucket check.
-6. `groups_and_percentage` → `true` iff the actor belongs to a targeted group
-   **and** `bucket(actor) < percentage`.
+3. `enabled` → `true`.
+4. `percentage` → `true` only if a user was passed **and** that user's bucket is below the percentage.
+5. `groups` → `true` only if a user was passed **and** they belong to a targeted group.
+6. `groups_and_percentage` → `true` only if a user was passed **and** they belong to a targeted group **and** their bucket is below the percentage.
 
-Percentage math is deterministic per actor: the same actor + flag always lands
-in the same bucket (`0..99`), so raising the percentage only shifts the cutoff
-— no flickering. At `100`, every actor with a stable id passes (max bucket is
-99); at `0`, everyone fails. The `percentage` column is only meaningful for the
-`percentage` and `groups_and_percentage` states; other states ignore it at
-evaluation time, and the admin flags controller resets it to `0` on write so
-a stale value submitted via the UI can never persist silently (direct model
-writes bypass this normalization — there is no model callback).
+A few guarantees worth knowing:
 
-Details: [Architecture](docs/ARCHITECTURE.md#flag-evaluation-fr-3-t06) and
-[bucketing contract](docs/ARCHITECTURE.md#deterministic-bucketing-fr-4-t05).
+- **Percentage rollouts are stable.** Every user is deterministically assigned
+  a bucket from `0` to `99` based on the flag key and their user id, so the
+  same user always lands in the same bucket. Raising a flag from 10% to 50%
+  only adds users — nobody who had the feature loses it. `100` includes
+  everyone, `0` includes no one.
+- **Group targeting uses memberships.** Create a group (e.g. `beta_testers`),
+  add users to it via the admin UI's user search, then attach the group to a
+  flag. A user matches if they belong to any of the flag's groups.
+- **Safe defaults.** An unknown flag returns `false`. Percentage and group
+  checks without a user return `false`. `Dwar.enabled?` itself never raises —
+  if something is unexpected, the feature simply stays off.
+- **Changes take effect immediately.** Editing a flag in the admin UI applies
+  to the very next `enabled?` call. No deploy, no restart.
 
 ## Admin UI
 
-Server-rendered, no build step. Engine root (`/`) routes to the flags index.
+The admin UI is server-rendered and lives under the mount path (`/dwar` by
+default). The home page is the flags list.
 
-- **Flags** (`/admin/flags`): CRUD + search by key/description substring; per-flag
-  state and targeting summary (percentage value, targeted group names); create
-  defaults to `disabled`; destroy removes the flag and its targeting rows.
-- **Groups** (`/admin/groups`): CRUD with unique-name validation; index shows
-  member counts; destroy cleans up memberships and flag-targeting rows.
-- **Memberships** (`/admin/groups/:id/memberships`): list members, add via the
-  user picker, remove; duplicate adds rejected; members whose host records no
-  longer resolve render with a label fallback instead of crashing.
-- **User picker** (`/admin/users.json?q=…`): JSON `[{id, label}, …]` from
-  `user_finder`, labels via `user_display`; vanilla-JS autocomplete in a single
-  shipped file (`app/assets/javascripts/dwar/user_picker.js`) — mousedown/Enter
-  selects into the visible label + hidden id.
-- **Audits** (`/admin/audits`): newest-first list (capped at 200 rows) of who
-  changed what, when.
+- **Flags** (`/admin/flags`): create, edit, and delete flags; search by key or
+  description; each flag shows its state plus a summary of its percentage and
+  targeted groups. Deleting a flag removes its group targeting as well.
+- **Groups** (`/admin/groups`): create groups with unique names; the list
+  shows member counts; deleting a group removes its memberships and detaches
+  it from flags.
+- **Memberships** (`/admin/groups/:id/memberships`): list a group's members,
+  add members through the user search box, remove members. Adding the same
+  user twice is rejected.
+- **Audits** (`/admin/audits`): the newest 200 changes showing who changed
+  what, and when.
 
-Every admin route inherits the fail-closed authorization gate — with no
-`authorization` hook configured, the whole area returns `403`.
+Every admin page requires the `authorization` check to pass, otherwise it
+returns a `403` error page.
 
-## Development
+## Configuration
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, `bundle exec rake test`,
-`bundle exec standardrb`, the CI matrix, and the branch/PR workflow
-(one task → one branch → one PR).
+All options are set in `config/initializers/dwar.rb` and are optional at boot.
+`user_finder` is only required when you use the admin user search.
+
+| Option | Type | Default | Meaning / example |
+|---|---|---|---|
+| `user_finder` | callable `->(query) { users }` | `nil` | How the admin user search finds records. Receives a query string, returns user records. Scope and cap the results inside the finder (e.g. `.order(:name).limit(50)`). Unset → the search endpoint returns a `503` error. Example: `config.user_finder = ->(query) { User.where("name LIKE ?", "%#{ActiveRecord::Base.sanitize_sql_like(query)}%").order(:name).limit(50) }` |
+| `user_display` | method name (`Symbol`/`String`) or callable | `:to_s` | How users are labeled in the admin UI. A method name is called on each record (`record.public_send(:name)`); a callable is called with the record. Falls back to `to_s` when unset or unknown. Example: `config.user_display = :name` |
+| `admin_path` | `String` | `"/dwar"` | Where you expect the admin UI to live. Informational only — you still mount the engine yourself with `mount Dwar::Engine => "/dwar"`. Example: `config.admin_path = "/admin/dwar"` (and mount it there) |
+| `authorization` | callable `->(controller) { bool }` | `nil` | Who may open the admin UI, evaluated with access to your controller helpers such as `current_user`. Unset → every admin request is denied. Example: `config.authorization = ->(controller) { controller.current_user.admin? }` |
+| `cache` | Boolean | `true` | Whether `Dwar.enabled?` results are cached in memory. Set to `false` to re-evaluate on every call. |
+| `audit_actor` | callable `->(controller) { user }` | `nil` | Who admin changes are attributed to in the audit trail. Unset → audits are recorded without an actor. Example: `config.audit_actor = ->(controller) { controller.current_user }` |
 
 ## License
 
