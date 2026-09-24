@@ -77,7 +77,7 @@ might use percentage or group targeting. For a simple on/off flag, the actor
 is optional:
 
 ```ruby
-Dwar.enabled?(:maintenance_banner)                 # fully enabled => true
+Dwar.enabled?(:new_checkout)                       # fully enabled => true
 Dwar.enabled?(:new_checkout, current_user)          # percentage/group checks need an actor
 ```
 
@@ -108,7 +108,7 @@ When you call `Dwar.enabled?`, the flag is resolved in this order:
 A few guarantees worth knowing:
 
 - **Percentage rollouts are stable.** Every user is deterministically assigned
-  a bucket from `0` to `99` based on the flag key and their user id, so the
+  a bucket from `0` to `99` based on the flag key, actor type, and user id, so the
   same user always lands in the same bucket. Raising a flag from 10% to 50%
   only adds users — nobody who had the feature loses it. `100` includes
   everyone, `0` includes no one.
@@ -116,10 +116,13 @@ A few guarantees worth knowing:
   add users to it via the admin UI's user search, then attach the group to a
   flag. A user matches if they belong to any of the flag's groups.
 - **Safe defaults.** An unknown flag returns `false`. Percentage and group
-  checks without a user return `false`. `Dwar.enabled?` itself never raises —
-  if something is unexpected, the feature simply stays off.
+  checks without a user return `false`. `Dwar.enabled?` never raises on
+  unknown keys or missing/invalid actors (the feature simply stays off);
+  infrastructure errors still propagate.
 - **Changes take effect immediately.** Editing a flag in the admin UI applies
-  to the very next `enabled?` call. No deploy, no restart.
+  to the very next `enabled?` call within the same process. No deploy, no
+  restart. (Each process holds its own in-memory copy; multi-process
+  propagation is out of scope.)
 
 ## Admin UI
 
@@ -139,7 +142,7 @@ default). The home page is the flags list.
   what, and when.
 
 Every admin page requires the `authorization` check to pass, otherwise it
-returns a `403` error page.
+returns a `403` error page. A hook that raises fails loud as a `500`.
 
 ## Configuration
 
