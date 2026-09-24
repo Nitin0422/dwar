@@ -1,1 +1,3 @@
+# Parser target: lowest supported Ruby (matches gemspec >= 3.2 and test matrix 3.2/3.3/3.4).
+# The lint job itself runs on .ruby-version (3.4.2); do not bump this unless dropping 3.2 support.
 ruby_version: 3.2
