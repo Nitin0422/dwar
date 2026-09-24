@@ -4,10 +4,13 @@
 #   Ensure the SQLite 3 gem is defined in your Gemfile
 #   gem "sqlite3"
 #
-# Databases live under db/ (the classic layout). The pool/max_connections
-# tuning key was renamed between Rails versions (pool in 7.x, max_connections
-# in 8.x), so it is deliberately omitted to stay version-agnostic; sqlite3's
-# defaults are fine for the dummy app.
+# Databases live under db/ (the classic layout). `pool` is valid across the
+# supported matrix (7.1/7.2/8.0; verified pool sizing on each) and the test
+# env sets it explicitly: CacheTest spawns 8 concurrent reader threads plus
+# the main thread, so the default pool of 5 exhausts under Rails 7.1
+# (ActiveRecord::ConnectionTimeoutError) while 7.2/8.0 happen to pass on
+# timing. Pool 15 covers 8 workers + main with headroom; sqlite handles it
+# fine for the dummy app.
 default: &default
   adapter: sqlite3
   timeout: 5000
@@ -22,6 +25,7 @@ development:
 test:
   <<: *default
   database: db/test.sqlite3
+  pool: 15
 
 # SQLite3 write its data on the local filesystem, as such it requires
 # persistent disks. If you are deploying to a managed service, you should
