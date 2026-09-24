@@ -11,9 +11,16 @@ name: CI
 # Lockfile/bundler-cache contract:
 #   - The variant gemfile lockfiles (gemfiles/*.gemfile.lock) are committed so
 #     that CI installs are frozen and deterministic.
+#   - BUNDLE_FROZEN=true (top-level env, --frozen equivalent) enforces frozen
+#     installs for both test and lint jobs; CI fails instead of re-resolving
+#     when a lockfile is out of sync.
 #   - ruby/setup-ruby with `bundler-cache: true` reads the selected lockfile,
 #     installs the locked bundler version, restores dependencies from the
 #     gem-cache, and caches them for subsequent runs, keeping runs fast.
+#
+# Deferred (QA-01, no behavior change): optimizing the per-job test DB rebuild
+# cost (rake test => dummy:test_db => db:create db:migrate). Recorded here
+# intentionally; revisit separately if CI time becomes a problem.
 on:
   push:
     branches: [main]
@@ -23,6 +30,10 @@ on:
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+# Frozen installs for every job (--frozen equivalent; covers test + lint).
+env:
+  BUNDLE_FROZEN: "true"
 
 jobs:
   test:
@@ -47,11 +58,14 @@ jobs:
     name: lint
     runs-on: ubuntu-latest
     env:
+      # Lint runs once on the newest supported Rails to keep the signal single
+      # and fast; test matrix already covers 7.1/7.2/8.0 x ruby 3.2/3.3/3.4.
       BUNDLE_GEMFILE: ${{ github.workspace }}/gemfiles/rails_8.0.gemfile
     steps:
       - uses: actions/checkout@v4
       - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: "3.4.2"
+          # No ruby-version: single source of truth is .ruby-version.
+          # Test matrix still covers 3.2/3.3/3.4 per gemspec >= 3.2.
           bundler-cache: true
       - run: bundle exec standardrb
