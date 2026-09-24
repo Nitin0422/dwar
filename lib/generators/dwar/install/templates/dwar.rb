@@ -18,7 +18,8 @@ Dwar.configure do |config|
   # Default: nil (unset; required only when the picker endpoint is used)
   # config.user_finder = ->(query) { User.search(query) }
 
-  # Method name used to render user picker labels.
+  # How picker labels render: a Symbol/String method name sent to the
+  # record, or a callable called with the record.
   # Default: :to_s
   # config.user_display = :to_s
 
