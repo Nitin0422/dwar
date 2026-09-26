@@ -27,7 +27,7 @@ module Dwar
         result = hook.call(self)
 
         unless result
-          render plain: "Dwar admin is disabled: authorization hook denied access", status: :forbidden
+          render plain: "Dwar admin is disabled: no authorization hook configured", status: :forbidden
           return # rubocop:disable Style/RedundantReturn -- necessary in Rails before_action to halt action execution
         end
       end

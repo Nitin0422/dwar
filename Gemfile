@@ -13,5 +13,5 @@ gem "standard", "~> 1.0"
 # NOT be added to the gemspec runtime dependencies.
 group :development, :test do
   gem "sqlite3", "~> 2.0"
-  gem "puma", ">= 6.0"
+  gem "puma", "~> 6.0"
 end

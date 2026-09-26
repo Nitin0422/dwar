@@ -15,7 +15,11 @@ covers design and stability contracts.
 
 ## Setup
 
-Run from the gem root (`dwar/` — every command below assumes this cwd):
+Run from the gem root (`dwar/` — every command below assumes this cwd).
+Always install from the gem root, never from `test/dummy`: the dummy's own
+`Gemfile` just delegates to the root `Gemfile`, and a `test/dummy` install
+would write a drifted `test/dummy/Gemfile.lock` (gitignored — never commit
+it).
 
 ```sh
 bundle install
@@ -30,9 +34,12 @@ app's `schema.rb` and `*.sqlite3` files are gitignored and built from
 migrations by this step — a fresh clone has no database until you run it.
 
 To boot the dummy app for manual verification (admin UI at `/dwar`, picker
-demo at `/user_picker_demo`), also from the gem root:
+demo at `/user_picker_demo`), also from the gem root. The server boots in
+development, so prepare the development database first — `dummy:test_db`
+only builds the test database:
 
 ```sh
+bundle exec rake dummy:dev_db   # RAILS_ENV=development db:create db:migrate, once per fresh clone
 bundle exec bin/rails server   # runs in the dummy app context
 ```
 

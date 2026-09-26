@@ -26,6 +26,14 @@ task "dummy:test_db" do
   sh "RAILS_ENV=test bin/rails db:create db:migrate"
 end
 
+# `dummy:test_db` only builds the test database, but `bin/rails server`
+# boots in development and needs the development database. Prepare it once
+# per fresh clone before starting the server (see CONTRIBUTING.md).
+desc "Prepare the dummy app's development database from migrations"
+task "dummy:dev_db" do
+  sh "RAILS_ENV=development bin/rails db:create db:migrate"
+end
+
 task test: "dummy:test_db"
 
 task default: :test
