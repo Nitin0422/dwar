@@ -1,0 +1,6 @@
+# frozen_string_literal: true
+
+# Test harness for the dwar engine (test/dummy). Delegates to the engine's
+# root Gemfile so `bundle exec` resolves the same gems (rails, dwar, sqlite3,
+# puma) whether run from the gem root or from test/dummy.
+eval_gemfile File.expand_path("../../Gemfile", __dir__)

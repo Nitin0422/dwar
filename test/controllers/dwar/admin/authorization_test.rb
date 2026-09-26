@@ -21,11 +21,13 @@ class AuthorizationTest < ActionDispatch::IntegrationTest
 
       assert_response :forbidden
       assert_includes response.body, "Dwar admin is disabled"
+      assert_includes response.body, "no authorization hook configured"
     end
   end
 
   # AC: With a hook configured to return false, every admin route
-  # denies access (fail closed).
+  # denies access (fail closed). The deny message stays fail-closed but
+  # names the cause (hook denied) distinctly from the missing-hook case.
   test "hook returning false denies all admin paths with 403" do
     Dwar.configure { |c| c.authorization = ->(_controller) { false } }
 
@@ -34,6 +36,7 @@ class AuthorizationTest < ActionDispatch::IntegrationTest
 
       assert_response :forbidden
       assert_includes response.body, "Dwar admin is disabled"
+      assert_includes response.body, "authorization hook denied access"
     end
   end
 
