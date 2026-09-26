@@ -3,6 +3,7 @@
 /pkg/
 *.gem
 /Gemfile.lock
+/test/dummy/Gemfile.lock
 /coverage/
 .DS_Store
 .vscode/
