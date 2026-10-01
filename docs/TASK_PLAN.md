@@ -160,22 +160,25 @@ root in both `test` and `development`.
 
 **Description**
 
-Migrations and models for the four tables: `dwar_flags` (unique key, state,
+Migrations and models for the five tables: `dwar_flags` (unique key, state,
 percentage), `dwar_groups` (unique name, optional description),
 `dwar_flag_groups` (join: flag ↔ targeted groups), `dwar_group_memberships`
-(polymorphic actor reference). Models: `Dwar::Flag`, `Dwar::Group`,
-`Dwar::FlagGroup`, `Dwar::GroupMembership` with validations, associations, and
+(polymorphic actor reference), `dwar_audits` (audit trail; no FKs by design).
+Models: `Dwar::Flag`, `Dwar::Group`,
+`Dwar::FlagGroup`, `Dwar::GroupMembership`, `Dwar::Audit` with validations, associations, and
 the flag state enum. All internals namespaced under `Dwar::` with `dwar_`
 table prefixes (FR-9).
 
 **Acceptance criteria**
 
-- [ ] Migrations create all engine tables with the `dwar_` prefix (five tables
-      across three migration files), foreign keys,
+- [ ] Migrations create all engine tables with the `dwar_` prefix (currently
+      five tables across three migration files — see `db/migrate/*`), foreign keys,
       and indexes: unique index on `dwar_flags.key`; unique index on
       `dwar_groups.name`; unique compound index on
       `dwar_flag_groups(flag_id, group_id)`; unique compound index on
-      `dwar_group_memberships(group_id, actor_type, actor_id)`.
+      `dwar_group_memberships(group_id, actor_type, actor_id)`; `dwar_audits`
+      indexed on `(auditable_type, auditable_id)`, `created_at`,
+      `(actor_type, actor_id)` with no FKs by design.
 - [ ] Migrations are reversible (up/down) and run cleanly in the dummy app.
 - [ ] `Flag` has: `key` (presence, uniqueness, sensible format e.g. `\A[a-z0-9_/.-]+\z`),
       state enum `disabled | enabled | percentage | groups | groups_and_percentage`,
@@ -606,7 +609,7 @@ showing the mount line.
 
 - [ ] Generator is runnable as `bin/rails generate dwar:install …` in the
       dummy app (and documented for host apps).
-- [ ] Copies all engine migrations (three) without duplicating on re-run.
+- [ ] Copies all engine migrations (currently three files — see `db/migrate/*`) without duplicating on re-run.
 - [ ] Generates `config/initializers/dwar.rb` with every configuration option
       commented, defaults matching T04.
 - [ ] Output includes the recommended mount path (`mount Dwar::Engine =>

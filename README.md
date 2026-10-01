@@ -38,9 +38,10 @@ Then open the admin UI at `http://localhost:3000/dwar`.
 > **Heads-up:** the admin UI is fail-closed — it returns `403` until
 > `config.authorization` is set, and group-member search needs
 > `config.user_finder` (plus the picker `<script>` below). See
-> [Configure](#configure). Dummy-harness developers: follow
-> [CONTRIBUTING.md](CONTRIBUTING.md) (`rake dummy:dev_db` before server,
-> `rake dummy:test_db` before tests) rather than plain `db:migrate`.
+> [Configure](#configure). Dummy-harness developers: from the gem root follow
+> [CONTRIBUTING.md](CONTRIBUTING.md) (`bundle exec rake dummy:dev_db` before server,
+> `bundle exec rake dummy:test_db` before tests) — the rake wrappers delegate to
+> `db:create db:migrate` (see `Rakefile`).
 
 ## Configure
 

@@ -156,13 +156,14 @@ routes, and configuration.
 
 ### T03 — Build the data model (migrations + models)
 
-**Requirements:** Four tables — `dwar_flags` (key, state, percentage),
+**Requirements:** Five tables — `dwar_flags` (key, state, percentage),
 `dwar_groups` (name, description), `dwar_flag_groups` (flag↔group join),
-`dwar_group_memberships` (polymorphic actor) — plus `Dwar::Flag`,
-`Dwar::Group`, `Dwar::FlagGroup`, `Dwar::GroupMembership`.
+`dwar_group_memberships` (polymorphic actor), `dwar_audits` (audit trail;
+no FKs by design) — plus `Dwar::Flag`,
+`Dwar::Group`, `Dwar::FlagGroup`, `Dwar::GroupMembership`, `Dwar::Audit`.
 
 **Acceptance criteria**
-- [ ] Migrations create all engine `dwar_`-prefixed tables (five tables across three migration files) with FKs and indexes: unique `dwar_flags.key`; unique `dwar_groups.name`; unique compound `dwar_flag_groups(flag_id, group_id)`; unique compound `dwar_group_memberships(group_id, actor_type, actor_id)`.
+- [ ] Migrations create all engine `dwar_`-prefixed tables (currently five tables across three migration files — see `db/migrate/*`) with FKs and indexes: unique `dwar_flags.key`; unique `dwar_groups.name`; unique compound `dwar_flag_groups(flag_id, group_id)`; unique compound `dwar_group_memberships(group_id, actor_type, actor_id)`; `dwar_audits` indexed on `(auditable_type, auditable_id)`, `created_at`, `(actor_type, actor_id)` with no FKs by design.
 - [ ] Migrations reversible; run cleanly in the dummy app.
 - [ ] `Flag`: `key` presence/uniqueness/format (`\A[a-z0-9_/.-]+\z`); state enum `disabled | enabled | percentage | groups | groups_and_percentage`; `percentage` integer 0–100 validated where used.
 - [ ] `Group`: `name` presence/uniqueness; optional `description`.
@@ -369,7 +370,7 @@ the recommended mount line.
 
 **Acceptance criteria**
 - [ ] Runnable as `bin/rails generate dwar:install` in the dummy app and documented for hosts.
-- [ ] Copies all engine migrations (three) without duplicating on re-run.
+- [ ] Copies all engine migrations (currently three files — see `db/migrate/*`) without duplicating on re-run.
 - [ ] Generates `config/initializers/dwar.rb` with every option commented; defaults match T04.
 - [ ] Output includes the recommended mount path.
 - [ ] Covered by `Rails::Generators::TestCase`.
