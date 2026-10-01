@@ -181,8 +181,7 @@ arrows/Escape navigate/dismiss), guards responses with a monotonic request
  memberships page inline init keeps the same never-throws posture but shows
  a visible hint (`data-dwar-picker-missing`) plus a console warning when the
  library is absent, instead of returning silently; the form still submits
- (progressive enhancement). The
- engine ships no asset-pipeline config — hosts must vendor
+ (progressive enhancement). The engine ships no asset-pipeline config — hosts must vendor
  `app/assets/javascripts/dwar/user_picker.js` and add the `<script>` include
  (see README "Membership picker JS"); the dummy app's dev-only demo harness
  (`UserPickerDemoController`, routes `/user_picker_demo`) serves this file
