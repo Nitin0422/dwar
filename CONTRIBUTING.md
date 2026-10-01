@@ -15,21 +15,32 @@ covers design and stability contracts.
 
 ## Setup
 
+Run from the gem root (`dwar/` — every command below assumes this cwd).
+Always install from the gem root, never from `test/dummy`: the dummy's own
+`Gemfile` just delegates to the root `Gemfile`, and a `test/dummy` install
+would write a drifted `test/dummy/Gemfile.lock` (gitignored — never commit
+it).
+
 ```sh
 bundle install
-bin/rails dummy:test_db   # RAILS_ENV=test bin/rails db:create db:migrate via the dummy app
+bundle exec rake dummy:test_db   # RAILS_ENV=test bin/rails db:create db:migrate via the dummy app
 ```
 
-`bin/rails dummy:test_db` is the `dummy:test_db` rake task (see `Rakefile`):
+`rake dummy:test_db` is the `dummy:test_db` rake task (see `Rakefile`):
 it delegates to the dummy app with `ENGINE_ROOT` set so the engine's own
 `db/migrate` is registered on the host app. `rake test` depends on it, so a
-plain `bundle exec rake test` also prepares the database first.
+plain `bundle exec rake test` also prepares the database first. The dummy
+app's `schema.rb` and `*.sqlite3` files are gitignored and built from
+migrations by this step — a fresh clone has no database until you run it.
 
 To boot the dummy app for manual verification (admin UI at `/dwar`, picker
-demo at `/user_picker_demo`):
+demo at `/user_picker_demo`), also from the gem root. The server boots in
+development, so prepare the development database first — `dummy:test_db`
+only builds the test database:
 
 ```sh
-bin/rails server   # runs in the dummy app context
+bundle exec rake dummy:dev_db   # RAILS_ENV=development db:create db:migrate, once per fresh clone
+bundle exec bin/rails server   # runs in the dummy app context
 ```
 
 ## Verification commands

@@ -33,6 +33,11 @@ test:
 #
 # Similarly, if you deploy your application as a Docker container, you must
 # ensure the database is located in a persisted volume.
+#
+# Dummy-harness production database (local sqlite file, not a production
+# endorsement). The dummy app is a dev/test harness: real hosts configure
+# their own database. An explicit database keeps RAILS_ENV=production boot
+# resolving instead of failing on the placeholder below.
 production:
   <<: *default
-  # database: path/to/persistent/storage/production.sqlite3
+  database: db/production.sqlite3
