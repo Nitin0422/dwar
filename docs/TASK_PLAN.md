@@ -170,7 +170,8 @@ table prefixes (FR-9).
 
 **Acceptance criteria**
 
-- [ ] Migrations create all four tables with the `dwar_` prefix, foreign keys,
+- [ ] Migrations create all engine tables with the `dwar_` prefix (five tables
+      across three migration files), foreign keys,
       and indexes: unique index on `dwar_flags.key`; unique index on
       `dwar_groups.name`; unique compound index on
       `dwar_flag_groups(flag_id, group_id)`; unique compound index on
@@ -605,7 +606,7 @@ showing the mount line.
 
 - [ ] Generator is runnable as `bin/rails generate dwar:install …` in the
       dummy app (and documented for host apps).
-- [ ] Copies all four migrations without duplicating on re-run.
+- [ ] Copies all engine migrations (three) without duplicating on re-run.
 - [ ] Generates `config/initializers/dwar.rb` with every configuration option
       commented, defaults matching T04.
 - [ ] Output includes the recommended mount path (`mount Dwar::Engine =>
