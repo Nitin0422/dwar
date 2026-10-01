@@ -19,7 +19,10 @@
 <%# %>
 <%# Serves GET /dwar/admin/users.json?q= via the existing %>
 <%# resources :users, only: [:index] route (format negotiation, no new route). %>
-<%# Load app/assets/javascripts/dwar/user_picker.js on the consuming page, then: %>
+<%# Host wiring: vendor or copy app/assets/javascripts/dwar/user_picker.js %>
+<%# into the host app and include it before the inline init, e.g.: %>
+<%#   <script src="/assets/dwar/user_picker.js"></script> %>
+<%# (see README "Membership picker JS"). Then: %>
 <%#   var root = document.querySelector("[data-dwar-user-picker]"); %>
 <%#   DwarUserPicker.init( %>
 <%#     root.querySelector("[data-dwar-user-picker-input]"), %>
