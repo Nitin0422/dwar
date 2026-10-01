@@ -20,7 +20,9 @@ end
 # the test database must be built from migrations before the suite runs. The
 # db:* tasks come from rails/tasks/engine.rake and delegate to the dummy app;
 # running through the engine-root bin/rails defines ENGINE_ROOT, which is what
-# registers the engine's own db/migrate on the host app.
+# registers the engine's own db/migrate on the host app. test/test_helper.rb
+# sets ActiveRecord.maintain_test_schema = false so the suite uses this
+# migrated database as-is (no automatic purge/reload).
 desc "Prepare the dummy app's test database from migrations"
 task "dummy:test_db" do
   sh "RAILS_ENV=test bin/rails db:create db:migrate"

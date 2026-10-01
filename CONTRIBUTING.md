@@ -66,7 +66,10 @@ BUNDLE_GEMFILE=gemfiles/rails_8.0.gemfile bundle exec rake test
 ```
 
 The variant lockfiles (`gemfiles/*.gemfile.lock`) are committed so installs
-are frozen and deterministic.
+are frozen and deterministic. The root `Gemfile.lock` (and
+`test/dummy/Gemfile.lock`) are gitignored and float with local resolution —
+the supported matrix is defined by the frozen variant locks plus `ci.yml`,
+not by the root lock.
 
 ## CI
 

@@ -17,25 +17,10 @@ ActiveRecord::Migrator.migrations_paths = [
   File.expand_path("dummy/db/migrate", __dir__)
 ]
 
-# The dummy:test_db rake step applies the migrations and dumps schema.rb, but
-# db:migrate does not stamp ar_internal_metadata.schema_sha1 (only schema
-# loads do). Without the stamp, maintain_test_schema! treats the freshly
-# migrated schema as stale, purges the DB and reloads it from schema.rb —
-# which records only the schema's single version and destroys the engine
-# migration's version row, leaving it perpetually "pending". The schema file is
-# current by construction here, so stamp the same SHA1 the check compares
-# against.
-schema_file = Rails.root.join("db", "schema.rb")
-if schema_file.exist?
-  # ConnectionPool#internal_metadata exists from Rails 7.2; on 7.1 the
-  # accessor lives on the connection adapter instead. Both return the same
-  # InternalMetadata writer with an identical []/[]= interface.
-  metadata = if ActiveRecord::Base.connection_pool.respond_to?(:internal_metadata)
-    ActiveRecord::Base.connection_pool.internal_metadata
-  else
-    ActiveRecord::Base.connection.internal_metadata
-  end
-  metadata[:schema_sha1] = OpenSSL::Digest::SHA1.hexdigest(schema_file.read)
-end
+# The test database is prepared explicitly by `rake dummy:test_db`
+# (db:create db:migrate) before the suite runs. Disable Rails' automatic
+# test-schema maintenance by design so the suite uses that migrated database
+# as-is instead of purging and reloading it from the gitignored schema.rb.
+ActiveRecord.maintain_test_schema = false
 
 require "rails/test_help"
