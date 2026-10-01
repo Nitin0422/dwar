@@ -265,4 +265,19 @@ class UsersTest < ActionDispatch::IntegrationTest
     assert_response :forbidden
     assert_includes response.body, "Dwar admin is disabled"
   end
+
+  # QA-03: no Users HTML page by design — the extensionless route is still
+  # the JSON-only picker (used by the group-membership search box).
+  test "index without extension returns json picker results" do
+    Dwar.configure do |c|
+      c.authorization = ->(_controller) { true }
+      c.user_finder = ->(_query) { [FakeRecord.new(1, "alice")] }
+    end
+
+    get "/dwar/admin/users", params: {q: "al"}
+
+    assert_response :success
+    assert_includes response.content_type, "application/json"
+    assert_equal [{"id" => 1, "label" => "fake-1-alice"}], JSON.parse(response.body)
+  end
 end

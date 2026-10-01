@@ -73,7 +73,8 @@ class SectionsTest < ActionDispatch::IntegrationTest
     assert_match %r{href="/dwar/}, response.body
     assert_match %r{href="/dwar/admin/flags}, response.body
     assert_match %r{href="/dwar/admin/groups}, response.body
-    assert_match %r{href="/dwar/admin/users}, response.body
+    assert_match %r{href="/dwar/admin/audits}, response.body
+    assert_no_match %r{href="/dwar/admin/users}, response.body
     assert_no_match %r{href="/dwar/admin/memberships}, response.body
   end
 

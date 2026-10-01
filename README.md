@@ -141,6 +141,10 @@ default). The home page is the flags list.
 - **Audits** (`/admin/audits`): the newest 200 changes showing who changed
   what, and when.
 
+There is no Users page by design — `GET /admin/users(.json)?q=` is a
+JSON-only picker backing the group-membership search (`user_finder` /
+`user_display`).
+
 Every admin page requires the `authorization` check to pass, otherwise it
 returns a `403` error page. A hook that raises fails loud as a `500`.
 
