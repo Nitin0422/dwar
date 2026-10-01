@@ -145,13 +145,33 @@ There is no Users page by design — `GET /admin/users(.json)?q=` is a
 JSON-only picker backing the group-membership search (`user_finder` /
 `user_display`).
 
+### Membership picker JS
+
+The membership search box needs autocomplete JS from the host app. The engine
+ships no asset-pipeline configuration, so vendor or copy
+`app/assets/javascripts/dwar/user_picker.js` from the gem into your app
+(e.g. `app/assets/javascripts/dwar/`) and include it before the inline
+initializer on the memberships page:
+
+```html
+<script src="/assets/dwar/user_picker.js"></script>
+```
+
+When the library is absent the page shows a small visible hint and logs a
+console warning instead of failing silently, and the Add-member form still
+submits without JS (autocomplete only). The picker endpoint defaults to
+`/dwar/admin/users.json?q=` — pass `url:` explicitly when the engine is
+mounted off the default path.
+
 Every admin page requires the `authorization` check to pass, otherwise it
 returns a `403` error page. A hook that raises fails loud as a `500`.
 
 ## Configuration
 
 All options are set in `config/initializers/dwar.rb` and are optional at boot.
-`user_finder` is only required when you use the admin user search.
+`user_finder` is only required when you use the admin user search — pair it
+with the picker `<script>` include described under
+[Membership picker JS](#membership-picker-js).
 
 | Option | Type | Default | Meaning / example |
 |---|---|---|---|

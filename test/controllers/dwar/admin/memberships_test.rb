@@ -49,6 +49,22 @@ class MembershipsAdminTest < ActionDispatch::IntegrationTest
     assert_includes response.body, 'name="membership[actor_type]"'
     assert_includes response.body, "Remove"
     assert_includes response.body, "data-turbo-confirm"
+    assert_includes response.body, "data-dwar-picker-missing"
+  end
+
+  # QA-04: a missing picker library fails visibly — the page carries the hint
+  # marker and a console warning, while the Add-member form still posts
+  # (progressive enhancement, no JS required to submit).
+  test "index renders a visible hint when the picker library is absent" do
+    group = Dwar::Group.create!(name: "beta")
+
+    get members_path(group)
+
+    assert_response :success
+    assert_includes response.body, "data-dwar-picker-missing"
+    assert_includes response.body, "console.warn"
+    assert_includes response.body, "DwarUserPicker"
+    assert_includes response.body, 'name="membership[actor_id]"'
   end
 
   test "index with no members shows empty state" do

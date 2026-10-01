@@ -23,6 +23,17 @@ Dwar.configure do |config|
   # Default: :to_s
   # config.user_display = :to_s
 
+  # Membership picker JS (host wiring): the Add-member autocomplete needs the
+  # vanilla-JS picker from the gem. The engine ships no asset-pipeline
+  # config, so vendor or copy app/assets/javascripts/dwar/user_picker.js
+  # into your app (e.g. app/assets/javascripts/dwar/) and include it before
+  # the inline init on the memberships page:
+  #   <script src="/assets/dwar/user_picker.js"></script>
+  # Without the include the form still submits — the page shows a visible
+  # hint and logs a console warning instead of failing silently. The picker
+  # endpoint defaults to /dwar/admin/users.json?q=; pass url: explicitly when
+  # mounting off the default path (see README "Membership picker JS").
+
   # Path the engine mounts its admin UI at.
   # Default: "/dwar"
   # config.admin_path = "/dwar"

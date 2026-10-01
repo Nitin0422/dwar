@@ -176,11 +176,17 @@ disables the delay — the lookup still runs asynchronously via
 `setTimeout(fn, 0)`), fetches `url?q=…` (appending with `?`/`&` as needed), renders a
 selectable list (mousedown/Enter selects into the visible label + hidden id;
 arrows/Escape navigate/dismiss), guards responses with a monotonic request
-token so a slow earlier response never overwrites newer results, and never
-throws — empty queries and fetch/parse failures render the empty state. The
-engine ships no asset-pipeline config; the dummy app's dev-only demo harness
-(`UserPickerDemoController`, routes `/user_picker_demo`) serves this file
-directly for manual verification. Picker results are capped at 50 items
-(`UsersController::PICKER_RESULT_LIMIT`); hosts must scope/cap inside
-`user_finder` itself. Picker logs carry the error class only, never the query
-or record data (PII).
+ token so a slow earlier response never overwrites newer results, and never
+ throws — empty queries and fetch/parse failures render the empty state. The
+ memberships page inline init keeps the same never-throws posture but shows
+ a visible hint (`data-dwar-picker-missing`) plus a console warning when the
+ library is absent, instead of returning silently; the form still submits
+ (progressive enhancement). The
+ engine ships no asset-pipeline config — hosts must vendor
+ `app/assets/javascripts/dwar/user_picker.js` and add the `<script>` include
+ (see README "Membership picker JS"); the dummy app's dev-only demo harness
+ (`UserPickerDemoController`, routes `/user_picker_demo`) serves this file
+ directly for manual verification. Picker results are capped at 50 items
+ (`UsersController::PICKER_RESULT_LIMIT`); hosts must scope/cap inside
+ `user_finder` itself. Picker logs carry the error class only, never the query
+ or record data (PII).

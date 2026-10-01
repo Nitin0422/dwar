@@ -57,18 +57,35 @@
 <%# The picker library (app/assets/javascripts/dwar/user_picker.js) is loaded %>
 <%# by the host per the partial's contract — the same posture as T11's demo %>
 <%# harness, which serves it from a dev-only route. The guarded init below %>
-<%# never throws when the library is absent; the form still submits. %>
+<%# never throws when the library is absent: it shows a visible hint and %>
+<%# logs a warning instead of failing silently; the form still submits. %>
+<p data-dwar-picker-missing hidden>Type a name to search — autocomplete needs the Dwar picker script (see README “Membership picker JS”). You can still submit this form without it.</p>
 <script>
   (function() {
-    if (typeof DwarUserPicker === "undefined") { return; }
-    var root = document.querySelector("[data-dwar-user-picker]");
-    if (!root) { return; }
-    DwarUserPicker.init(
-      root.querySelector("[data-dwar-user-picker-input]"),
-      {
-        url: root.dataset.url,
-        hiddenField: root.querySelector("[data-dwar-user-picker-hidden]")
-      }
-    );
+    function showPickerHint(reason) {
+      try {
+        var hint = document.querySelector("[data-dwar-picker-missing]");
+        if (hint) { hint.hidden = false; }
+      } catch (_e) {}
+      try {
+        if (typeof console !== "undefined" && console.warn) {
+          console.warn("[dwar] user picker unavailable: " + reason + ". See README 'Membership picker JS' for the required <script> include; the form still submits without JS.");
+        }
+      } catch (_e) {}
+    }
+    try {
+      if (typeof DwarUserPicker === "undefined") { showPickerHint("DwarUserPicker is not loaded"); return; }
+      var root = document.querySelector("[data-dwar-user-picker]");
+      if (!root) { showPickerHint("picker markup not found"); return; }
+      DwarUserPicker.init(
+        root.querySelector("[data-dwar-user-picker-input]"),
+        {
+          url: root.dataset.url,
+          hiddenField: root.querySelector("[data-dwar-user-picker-hidden]")
+        }
+      );
+    } catch (_e) {
+      showPickerHint("picker init failed");
+    }
   })();
 </script>
