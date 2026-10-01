@@ -57,9 +57,12 @@
 <%# The picker library (app/assets/javascripts/dwar/user_picker.js) is loaded %>
 <%# by the host per the partial's contract — the same posture as T11's demo %>
 <%# harness, which serves it from a dev-only route. The guarded init below %>
-<%# never throws when the library is absent: it shows a visible hint and %>
-<%# logs a warning instead of failing silently; the form still submits. %>
-<p data-dwar-picker-missing hidden>Type a name to search — autocomplete needs the Dwar picker script (see README “Membership picker JS”). You can still submit this form without it.</p>
+<%# never throws: it shows a visible hint and logs a warning instead of %>
+<%# failing silently — covering a missing library, missing markup/endpoint, %>
+<%# a throwing init, and an init that returns no handle; the form still %>
+<%# submits. The visible hint stays generic (dev detail lives in the %>
+<%# console warning only). %>
+<p data-dwar-picker-missing role="status" hidden>Autocomplete unavailable — you can still submit this form.</p>
 <script>
   (function() {
     function showPickerHint(reason) {
@@ -77,13 +80,12 @@
       if (typeof DwarUserPicker === "undefined") { showPickerHint("DwarUserPicker is not loaded"); return; }
       var root = document.querySelector("[data-dwar-user-picker]");
       if (!root) { showPickerHint("picker markup not found"); return; }
-      DwarUserPicker.init(
-        root.querySelector("[data-dwar-user-picker-input]"),
-        {
-          url: root.dataset.url,
-          hiddenField: root.querySelector("[data-dwar-user-picker-hidden]")
-        }
-      );
+      var input = root.querySelector("[data-dwar-user-picker-input]");
+      var hiddenField = root.querySelector("[data-dwar-user-picker-hidden]");
+      var url = root.dataset ? root.dataset.url : null;
+      if (!input || !hiddenField || !url) { showPickerHint("picker markup or endpoint missing"); return; }
+      var handle = DwarUserPicker.init(input, {url: url, hiddenField: hiddenField});
+      if (!handle) { showPickerHint("picker init returned no handle"); }
     } catch (_e) {
       showPickerHint("picker init failed");
     }

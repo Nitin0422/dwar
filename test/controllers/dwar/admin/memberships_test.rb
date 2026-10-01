@@ -52,9 +52,11 @@ class MembershipsAdminTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "data-dwar-picker-missing"
   end
 
-  # QA-04: a missing picker library fails visibly — the page carries the hint
-  # marker and a console warning, while the Add-member form still posts
-  # (progressive enhancement, no JS required to submit).
+  # QA-04: a missing picker library fails visibly — the page carries a
+  # hidden-by-default hint plus a console warning pairing, while the
+  # Add-member form still posts (progressive enhancement, no JS required
+  # to submit). The inline init also surfaces missing markup/endpoint and
+  # an init that returns no handle instead of staying silent.
   test "index renders a visible hint when the picker library is absent" do
     group = Dwar::Group.create!(name: "beta")
 
@@ -62,7 +64,14 @@ class MembershipsAdminTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "data-dwar-picker-missing"
+    assert_match(/data-dwar-picker-missing[^>]*\bhidden\b/, response.body)
+    assert_includes response.body, 'role="status"'
+    assert_includes response.body, "Autocomplete unavailable"
     assert_includes response.body, "console.warn"
+    assert_includes response.body, "DwarUserPicker is not loaded"
+    assert_includes response.body, "hint.hidden = false"
+    assert_includes response.body, "picker markup or endpoint missing"
+    assert_includes response.body, "picker init returned no handle"
     assert_includes response.body, "DwarUserPicker"
     assert_includes response.body, 'name="membership[actor_id]"'
   end

@@ -179,9 +179,12 @@ arrows/Escape navigate/dismiss), guards responses with a monotonic request
  token so a slow earlier response never overwrites newer results, and never
  throws — empty queries and fetch/parse failures render the empty state. The
  memberships page inline init keeps the same never-throws posture but shows
- a visible hint (`data-dwar-picker-missing`) plus a console warning when the
- library is absent, instead of returning silently; the form still submits
- (progressive enhancement). The engine ships no asset-pipeline config — hosts must vendor
+ a visible hint (`data-dwar-picker-missing`, `role="status"`, hidden by
+ default) plus a console warning on every otherwise-silent path — missing
+ library, missing markup/endpoint, throwing init, or init returning no
+ handle — instead of returning silently; the form still submits
+ (progressive enhancement). The visible hint stays generic while the
+ console warning points at the README wiring docs. The engine ships no asset-pipeline config — hosts must vendor
  `app/assets/javascripts/dwar/user_picker.js` and add the `<script>` include
  (see README "Membership picker JS"); the dummy app's dev-only demo harness
  (`UserPickerDemoController`, routes `/user_picker_demo`) serves this file
