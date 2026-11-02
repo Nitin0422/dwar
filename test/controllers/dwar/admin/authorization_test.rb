@@ -21,7 +21,20 @@ class AuthorizationTest < ActionDispatch::IntegrationTest
 
       assert_response :forbidden
       assert_includes response.body, "Dwar admin is disabled"
+      assert_includes response.body, "no authorization hook configured"
     end
+  end
+
+  # A literal non-callable value is treated the same as no hook: it cannot
+  # authorize, so the "not configured" message is correct.
+  test "non-callable authorization value uses the not-configured message" do
+    Dwar.configure { |c| c.authorization = true }
+
+    get "/dwar/admin/flags"
+
+    assert_response :forbidden
+    assert_includes response.body, "no authorization hook configured"
+    refute_includes response.body, "access denied"
   end
 
   # AC: With a hook configured to return false, every admin route
@@ -33,8 +46,25 @@ class AuthorizationTest < ActionDispatch::IntegrationTest
       get path
 
       assert_response :forbidden
-      assert_includes response.body, "Dwar admin is disabled"
+      assert_includes response.body, "access denied"
+      refute_includes response.body, "no authorization hook configured"
     end
+  end
+
+  # AC: nil and false are distinct failure modes: the unconfigured message
+  # must never be shown for a configured hook that denied access.
+  test "nil and false authorization hooks produce distinct deny messages" do
+    get "/dwar/admin/flags"
+    nil_body = response.body
+
+    Dwar.configure { |c| c.authorization = ->(_controller) { false } }
+    get "/dwar/admin/flags"
+    false_body = response.body
+
+    assert_response :forbidden
+    assert_includes nil_body, "no authorization hook configured"
+    assert_includes false_body, "access denied"
+    refute_equal nil_body, false_body
   end
 
   # AC: With a hook configured to return true, admin routes are

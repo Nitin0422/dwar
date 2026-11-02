@@ -57,6 +57,32 @@ class FlagsAdminTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "edit me"
   end
 
+  # AC: the group picker is capped at 200 options; the note explains why.
+  test "new form caps the group picker at 200 options and shows the cap note" do
+    201.times { |i| Dwar::Group.create!(name: format("cap_%03d", i)) }
+
+    get "/dwar/admin/flags/new"
+
+    assert_response :success
+    assert_select "select[name='flag[group_ids][]'] option", 200
+    assert_includes response.body, "Showing up to 200 groups"
+  end
+
+  # Key regression: a flag targeting a group beyond the picker cap must still
+  # show that group as a selected option, or editing would silently drop it.
+  test "edit form keeps a flag's targeted group beyond the option cap" do
+    groups = Array.new(201) { |i| Dwar::Group.create!(name: format("cap_%03d", i)) }
+    target = groups.last
+    flag = Dwar::Flag.create!(key: "keeps_target", state: "groups", groups: [target])
+
+    get "/dwar/admin/flags/#{flag.id}/edit"
+
+    assert_response :success
+    assert_select "select[name='flag[group_ids][]'] option", 201
+    assert_select "option[value='#{target.id}'][selected]"
+    assert_includes response.body, "groups already targeted by this flag are always included"
+  end
+
   # CRUD: create --------------------------------------------------------
   test "create persists a disabled flag and redirects to index" do
     assert_difference("Dwar::Flag.count", 1) do
@@ -359,6 +385,26 @@ class FlagsAdminTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes response.body, "ci_one"
     assert_not_includes response.body, "ci_two"
+  end
+
+  # AC: index is capped at 200 rows, but search runs before the cap so a
+  # flag beyond the first 200 is still reachable by query.
+  test "index caps the list at 200 flags and search reaches beyond the cap" do
+    201.times { |i| Dwar::Flag.create!(key: format("cap_%03d", i), state: "disabled") }
+
+    get "/dwar/admin/flags"
+
+    assert_response :success
+    assert_includes response.body, "cap_000"
+    assert_includes response.body, "cap_199"
+    assert_not_includes response.body, "cap_200"
+    assert_includes response.body, "Showing up to 200 flags"
+
+    get "/dwar/admin/flags", params: {q: "cap_200"}
+
+    assert_response :success
+    assert_includes response.body, "cap_200"
+    assert_not_includes response.body, "cap_000"
   end
 
   # Authorization regression (T08) --------------------------------------

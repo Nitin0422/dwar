@@ -44,6 +44,20 @@ class GroupsAdminTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "data-turbo-confirm"
   end
 
+  # AC: the groups list is capped at 200 rows, ordered by name, with a
+  # visible notice (pagination deferred).
+  test "index caps the list at 200 groups and shows the cap notice" do
+    201.times { |i| Dwar::Group.create!(name: format("cap_%03d", i)) }
+
+    get "/dwar/admin/groups"
+
+    assert_response :success
+    assert_includes response.body, "cap_000"
+    assert_includes response.body, "cap_199"
+    assert_not_includes response.body, "cap_200"
+    assert_includes response.body, "Showing up to 200 groups"
+  end
+
   # GET new/edit form coverage (mirrors the flags admin screens).
   test "new returns 200 with group form" do
     get "/dwar/admin/groups/new"
@@ -246,7 +260,8 @@ class GroupsAdminTest < ActionDispatch::IntegrationTest
     get "/dwar/admin/groups"
 
     assert_response :forbidden
-    assert_includes response.body, "Dwar admin is disabled"
+    assert_includes response.body, "access denied"
+    refute_includes response.body, "no authorization hook configured"
   end
 
   test "false authorization hook denies create with 403 and no record" do

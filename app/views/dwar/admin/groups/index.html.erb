@@ -2,6 +2,8 @@
 
 <p><%= link_to "New group", new_admin_group_path %></p>
 
+<p>Showing up to <%= Dwar::Admin::GroupsController::GROUP_LIMIT %> groups, ordered by name. Pagination is not yet implemented.</p>
+
 <% if @groups.any? %>
   <table>
     <thead>
