@@ -25,8 +25,8 @@ and the contracts contributors must not break.
 - The dummy app (`test/dummy`) is the engine's test harness and example host,
   versioned alongside the engine. It is **not** packaged into the built gem
   (the gemspec `files` whitelist covers `lib`, `app`, `config`, `db`,
-  `LICENSE.txt` only). User-facing picker demo code lives in the dummy app,
-  not the gem.
+  `README.md`, and `LICENSE.txt` only). User-facing picker demo code lives in
+  the dummy app, not the gem.
 
 ## Schema (4 + 1 tables)
 
@@ -129,10 +129,14 @@ All admin controllers inherit `Dwar::Admin::BaseController`, whose
 `before_action :authorize_admin!` evaluates `config.authorization` with the
 controller as context:
 
-- No hook (`nil`) or non-callable → `403` with a clear message.
-- Hook returns falsy → `403`.
+- No hook (`nil`) or non-callable → `403` with "no authorization hook
+  configured".
+- Hook returns falsy → `403` with a distinct "access denied" message.
 - Hook returns truthy → proceed.
 - Hook raises → propagates as a 500 (fail-loud — never fail-open).
+
+The two deny messages are intentionally distinct: "not configured" points at
+missing setup, while "access denied" points at a hook that ran and refused.
 
 Default-denied is deliberate: the admin area is inert until the host app
 explicitly configures access. Hosts scope tenancy/auth inside their own
@@ -166,6 +170,16 @@ admin controllers — **not** model callbacks:
   (pagination deferred), with best-effort record labels batched per auditable
   type (destroyed records render as `"Type #id (removed)"`, never a crash) and
   actor labels (`"User #1"`, em dash when `actor_type` is blank).
+
+## List caps (QA-07)
+
+The flags and groups indexes cap their rows at 200 (`FlagsController::FLAG_LIMIT`,
+`GroupsController::GROUP_LIMIT`), matching the audits list. Pagination is
+deferred; each view shows a notice explaining the cap. Flags search runs before
+the limit, so a query still reaches flags beyond the first 200. The flag form's
+group picker is capped at 200 options (`GROUP_OPTIONS_LIMIT`) but unions in any
+groups the flag already targets, so editing an old flag never silently drops
+targeting that falls outside the cap.
 
 ## Admin JS footprint
 

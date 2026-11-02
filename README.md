@@ -131,10 +131,15 @@ default). The home page is the flags list.
 
 - **Flags** (`/admin/flags`): create, edit, and delete flags; search by key or
   description; each flag shows its state plus a summary of its percentage and
-  targeted groups. Deleting a flag removes its group targeting as well.
+  targeted groups. Deleting a flag removes its group targeting as well. The
+  list shows up to 200 flags ordered by key; search runs first, so it still
+  reaches flags beyond that cap. The flag form offers up to 200 groups plus
+  any groups the flag already targets, so editing never silently drops
+  existing targeting.
 - **Groups** (`/admin/groups`): create groups with unique names; the list
   shows member counts; deleting a group removes its memberships and detaches
-  it from flags.
+  it from flags. The list shows up to 200 groups ordered by name; pagination
+  is not yet implemented.
 - **Memberships** (`/admin/groups/:id/memberships`): list a group's members,
   add members through the user search box, remove members. Adding the same
   user twice is rejected.
@@ -163,8 +168,13 @@ submits without JS (autocomplete only). The picker endpoint defaults to
 `/dwar/admin/users.json?q=` — pass `url:` explicitly when the engine is
 mounted off the default path.
 
-Every admin page requires the `authorization` check to pass, otherwise it
-returns a `403` error page. A hook that raises fails loud as a `500`.
+Every admin page requires the `authorization` check to pass. With no hook
+configured (or a non-callable value), every request returns a `403` with
+"Dwar admin is disabled: no authorization hook configured". A callable hook
+that returns a falsy value returns a `403` with "Dwar admin access denied: the
+authorization hook returned a falsy value" — the two messages distinguish
+"not configured" from "configured but denied". A hook that raises fails loud
+as a `500`.
 
 ## Configuration
 

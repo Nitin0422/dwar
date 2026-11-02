@@ -57,6 +57,96 @@ class FlagsAdminTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "edit me"
   end
 
+  # AC: the group picker is capped at 200 options; the note explains why.
+  test "new form caps the group picker at 200 options and shows the cap note" do
+    201.times { |i| Dwar::Group.create!(name: format("cap_%03d", i)) }
+
+    get "/dwar/admin/flags/new"
+
+    assert_response :success
+    assert_select "select[name='flag[group_ids][]'] option", 200
+    assert_includes response.body, "Showing up to 200 groups"
+  end
+
+  test "new form omits the cap note when there are fewer groups than the cap" do
+    Dwar::Group.create!(name: "only_group")
+
+    get "/dwar/admin/flags/new"
+
+    assert_response :success
+    refute_includes response.body, "Showing up to 200 groups"
+  end
+
+  # Key regression: a flag targeting a group beyond the picker cap must still
+  # show that group as a selected option, or editing would silently drop it.
+  test "edit form keeps a flag's targeted group beyond the option cap" do
+    groups = Array.new(201) { |i| Dwar::Group.create!(name: format("cap_%03d", i)) }
+    target = groups.last
+    flag = Dwar::Flag.create!(key: "keeps_target", state: "groups", groups: [target])
+
+    get "/dwar/admin/flags/#{flag.id}/edit"
+
+    assert_response :success
+    assert_select "select[name='flag[group_ids][]'] option", 201
+    assert_select "option[value='#{target.id}'][selected]"
+    assert_includes response.body, "groups already targeted by this flag are always included"
+  end
+
+  # A targeted group that is already inside the cap must not appear twice in
+  # the union.
+  test "group picker dedupes a targeted group already inside the cap" do
+    groups = Array.new(201) { |i| Dwar::Group.create!(name: format("dedupe_%03d", i)) }
+    target = groups[50]
+    flag = Dwar::Flag.create!(key: "dedupe_target", state: "groups", groups: [target])
+
+    get "/dwar/admin/flags/#{flag.id}/edit"
+
+    assert_response :success
+    assert_select "select[name='flag[group_ids][]'] option", 200
+    assert_select "option[value='#{target.id}']", 1
+    assert_select "option[value='#{target.id}'][selected]"
+  end
+
+  # The union is sorted by name as a whole, not capped names followed by the
+  # retained off-cap groups in association order.
+  test "group picker sorts the capped and selected union by name" do
+    groups = Array.new(205) { |i| Dwar::Group.create!(name: format("order_%03d", i)) }
+    off_cap = [groups[204], groups[202]]
+    flag = Dwar::Flag.create!(key: "ordered_targets", state: "groups", groups: off_cap)
+
+    get "/dwar/admin/flags/#{flag.id}/edit"
+
+    assert_response :success
+    names = css_select("select[name='flag[group_ids][]'] option").map { |option| option.text.strip }
+    expected = (groups.first(200).map(&:name) + off_cap.map(&:name)).sort
+    assert_equal expected, names
+  end
+
+  # An invalid create keeps the submitted selection, including an off-cap group.
+  test "failed create re-render keeps an off-cap group selection" do
+    groups = Array.new(201) { |i| Dwar::Group.create!(name: format("recreate_%03d", i)) }
+    target = groups.last
+
+    post "/dwar/admin/flags",
+      params: {flag: {key: "", state: "groups", group_ids: [target.id]}}
+
+    assert_response :unprocessable_entity
+    assert_select "option[value='#{target.id}'][selected]"
+  end
+
+  # An invalid update keeps the submitted selection, including an off-cap group.
+  test "failed update re-render keeps an off-cap group selection" do
+    groups = Array.new(201) { |i| Dwar::Group.create!(name: format("reupdate_%03d", i)) }
+    target = groups.last
+    flag = Dwar::Flag.create!(key: "reupdate_flag", state: "groups")
+
+    patch "/dwar/admin/flags/#{flag.id}",
+      params: {flag: {key: "", state: "groups", group_ids: [target.id]}}
+
+    assert_response :unprocessable_entity
+    assert_select "option[value='#{target.id}'][selected]"
+  end
+
   # CRUD: create --------------------------------------------------------
   test "create persists a disabled flag and redirects to index" do
     assert_difference("Dwar::Flag.count", 1) do
@@ -359,6 +449,26 @@ class FlagsAdminTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes response.body, "ci_one"
     assert_not_includes response.body, "ci_two"
+  end
+
+  # AC: index is capped at 200 rows, but search runs before the cap so a
+  # flag beyond the first 200 is still reachable by query.
+  test "index caps the list at 200 flags and search reaches beyond the cap" do
+    201.times { |i| Dwar::Flag.create!(key: format("cap_%03d", i), state: "disabled") }
+
+    get "/dwar/admin/flags"
+
+    assert_response :success
+    assert_includes response.body, "cap_000"
+    assert_includes response.body, "cap_199"
+    assert_not_includes response.body, "cap_200"
+    assert_includes response.body, "Showing up to 200 flags"
+
+    get "/dwar/admin/flags", params: {q: "cap_200"}
+
+    assert_response :success
+    assert_includes response.body, "cap_200"
+    assert_not_includes response.body, "cap_000"
   end
 
   # Authorization regression (T08) --------------------------------------

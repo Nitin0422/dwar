@@ -12,9 +12,10 @@ module Dwar
       private
 
       # Evaluate the host-configured authorization hook.
-      # - No hook (nil) or non-callable -> 403 fail-closed.
+      # - No hook (nil) or non-callable -> 403 fail-closed ("not configured").
       # - Hook returns truthy -> proceed.
-      # - Hook returns falsy -> 403 fail-closed.
+      # - Hook returns falsy -> 403 fail-closed ("access denied", distinct
+      #   from the unconfigured message).
       # - Hook raises -> propagate as 500 (fail-loud, do not rescue).
       def authorize_admin!
         hook = Dwar.config.authorization
@@ -27,7 +28,7 @@ module Dwar
         result = hook.call(self)
 
         unless result
-          render plain: "Dwar admin is disabled: no authorization hook configured", status: :forbidden
+          render plain: "Dwar admin access denied: the authorization hook returned a falsy value", status: :forbidden
           return # rubocop:disable Style/RedundantReturn -- necessary in Rails before_action to halt action execution
         end
       end

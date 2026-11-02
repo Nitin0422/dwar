@@ -3,10 +3,14 @@
 module Dwar
   module Admin
     class GroupsController < BaseController
+      GROUP_LIMIT = 200
+
       before_action :set_group, only: %i[edit update destroy]
 
       def index
-        @groups = Dwar::Group.order(:name).to_a
+        # Cap the list (pagination deferred); member counts stay scoped to
+        # the returned ids so the page never counts unseen groups.
+        @groups = Dwar::Group.order(:name).limit(GROUP_LIMIT).to_a
         counts = Dwar::GroupMembership.where(group_id: @groups.map(&:id)).group(:group_id).count
         @member_counts = counts
       end

@@ -3,7 +3,12 @@
 module Dwar
   module Admin
     class FlagsController < BaseController
+      FLAG_LIMIT = 200
+      GROUP_OPTIONS_LIMIT = 200
+
       before_action :set_flag, only: %i[edit update destroy]
+
+      helper_method :group_options, :group_options_capped?
 
       def index
         @flags = Dwar::Flag.includes(:groups).order(:key)
@@ -19,8 +24,10 @@ module Dwar
             q: pattern
           )
         end
+        # Cap the list (pagination deferred). Search runs first, so a query
+        # still reaches flags beyond the first FLAG_LIMIT rows.
         # Load once so the view's any?/each below share one query.
-        @flags = @flags.load
+        @flags = @flags.limit(FLAG_LIMIT).load
       end
 
       def new
@@ -115,6 +122,25 @@ module Dwar
         else
           redirect_to admin_flags_path, alert: "Flag could not be destroyed."
         end
+      end
+
+      # Options for the flag form's group picker. The list is capped like the
+      # index screens, but any group the flag already targets is unioned in
+      # and sorted by name so editing an old flag never silently drops its
+      # targeting when the host has more groups than the cap.
+      def group_options
+        return @group_options if defined?(@group_options)
+
+        capped = Dwar::Group.order(:name).limit(GROUP_OPTIONS_LIMIT).to_a
+        selected = @flag ? @flag.groups.to_a : []
+        @group_options = (capped + selected).uniq(&:id).sort_by(&:name)
+      end
+
+      # The note is accurate only when the rendered union actually reaches the
+      # cap. Since the capped relation is part of that union, this also means
+      # the group table itself is at/over the cap.
+      def group_options_capped?
+        group_options.size >= GROUP_OPTIONS_LIMIT
       end
 
       private

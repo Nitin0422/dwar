@@ -33,7 +33,10 @@
   <div>
     <%= form.label :group_ids, "Groups" %>
     <%= hidden_field_tag "flag[group_ids][]", "" %>
-    <%= form.collection_select :group_ids, Dwar::Group.order(:name), :id, :name, {}, {multiple: true} %>
+    <%= form.collection_select :group_ids, group_options, :id, :name, {}, {multiple: true} %>
+    <% if group_options_capped? %>
+      <p>Showing up to <%= Dwar::Admin::FlagsController::GROUP_OPTIONS_LIMIT %> groups; groups already targeted by this flag are always included.</p>
+    <% end %>
   </div>
 
   <div>
