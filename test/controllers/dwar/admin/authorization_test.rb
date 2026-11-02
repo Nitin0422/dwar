@@ -67,6 +67,21 @@ class AuthorizationTest < ActionDispatch::IntegrationTest
     refute_equal nil_body, false_body
   end
 
+  # AC: a hook failure is a server error, not a silent deny. The controller
+  # deliberately does not rescue hook exceptions (fail loud). The test env
+  # uses show_exceptions = :rescuable, which re-raises unrescuable errors, so
+  # assert_raises observes the propagated exception rather than a 500 body.
+  test "hook raising an exception propagates instead of denying with 403" do
+    error = Class.new(StandardError)
+    Dwar.configure do |c|
+      c.authorization = ->(_controller) { raise error, "auth backend exploded" }
+    end
+
+    raised = assert_raises(error) { get "/dwar/admin/flags" }
+
+    assert_equal "auth backend exploded", raised.message
+  end
+
   # AC: With a hook configured to return true, admin routes are
   # reachable (200).
   test "hook returning true allows access to admin flags index" do

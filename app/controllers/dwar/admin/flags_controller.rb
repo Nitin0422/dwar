@@ -8,7 +8,7 @@ module Dwar
 
       before_action :set_flag, only: %i[edit update destroy]
 
-      helper_method :group_options
+      helper_method :group_options, :group_options_capped?
 
       def index
         @flags = Dwar::Flag.includes(:groups).order(:key)
@@ -129,14 +129,18 @@ module Dwar
       # and sorted by name so editing an old flag never silently drops its
       # targeting when the host has more groups than the cap.
       def group_options
-        @group_options ||= begin
-          groups = Dwar::Group.order(:name).limit(GROUP_OPTIONS_LIMIT).to_a
-          selected_ids = Array(@flag&.group_ids)
-          if selected_ids.any?
-            groups += Dwar::Group.where(id: selected_ids).order(:name).to_a
-          end
-          groups.uniq(&:id).sort_by(&:name)
-        end
+        return @group_options if defined?(@group_options)
+
+        capped = Dwar::Group.order(:name).limit(GROUP_OPTIONS_LIMIT).to_a
+        selected = @flag ? @flag.groups.to_a : []
+        @group_options = (capped + selected).uniq(&:id).sort_by(&:name)
+      end
+
+      # The note is accurate only when the rendered union actually reaches the
+      # cap. Since the capped relation is part of that union, this also means
+      # the group table itself is at/over the cap.
+      def group_options_capped?
+        group_options.size >= GROUP_OPTIONS_LIMIT
       end
 
       private

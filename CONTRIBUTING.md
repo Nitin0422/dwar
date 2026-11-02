@@ -110,6 +110,6 @@ change, update the affected docs in the same PR:
   (the generated initializer must agree with the README — treat drift as a bug).
 
 Docs-only changes (like this guide) touch no `lib/`, `app/`, `config/`, `db/`,
-`test/`, or CI code. The gemspec packages `README.md` and `LICENSE.txt` only;
+`test/`, or CI code. `README.md` and `LICENSE.txt` are packaged in the gem;
 `CONTRIBUTING.md`, `docs/`, `test/`, and `gemfiles/` are intentionally **not**
 packaged, so docs changes do not expand the shipped gem.
