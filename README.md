@@ -33,7 +33,15 @@ Mount the engine in `config/routes.rb`:
 mount Dwar::Engine => "/dwar"
 ```
 
-Then open the admin UI at `http://localhost:3000/dwar`.
+> **Heads-up:** the admin UI is fail-closed — it returns `403` until
+> `config.authorization` is set, and group-member search needs
+> `config.user_finder` (plus the picker `<script>` below). Configure
+> authorization first (see [Configure](#configure)), then open the admin UI at
+> `http://localhost:3000/dwar`. Dummy-harness developers: from the gem root follow
+> [CONTRIBUTING.md](https://github.com/Nitin0422/dwar/blob/main/CONTRIBUTING.md)
+> (`bundle exec rake dummy:dev_db` before server,
+> `bundle exec rake dummy:test_db` before tests) — the rake wrappers delegate to
+> `db:create db:migrate` (see `Rakefile`).
 
 ## Configure
 

@@ -15,7 +15,7 @@
 Dwar.configure do |config|
   # How the user picker looks up records to choose from. A callable that
   # accepts a query String and returns an enumerable of user records.
-  # Default: nil (unset; required only when the picker endpoint is used)
+  # Default: nil (unset; the picker endpoint responds 503 until configured)
   # config.user_finder = ->(query) { User.search(query) }
 
   # How picker labels render: a Symbol/String method name sent to the
@@ -38,9 +38,13 @@ Dwar.configure do |config|
   # Default: "/dwar"
   # config.admin_path = "/dwar"
 
-  # Gatekeeper for the admin UI: a callable evaluated with the controller;
-  # nil means every request is denied.
-  # Default: nil
+  # Gatekeeper for the admin UI: a callable evaluated with the controller.
+  # nil (or a non-callable value) denies every request with a 403
+  # "Dwar admin is disabled: no authorization hook configured" response; a
+  # callable that returns falsy also denies with a
+  # 403 "Dwar admin access denied: the authorization hook returned a falsy
+  # value" response; a hook that raises propagates as a 500
+  # (fail-loud). Default: nil
   # config.authorization = ->(controller) { controller.current_user.admin? }
 
   # Whether flag evaluation results are cached.
