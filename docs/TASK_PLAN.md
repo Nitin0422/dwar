@@ -202,8 +202,8 @@ table prefixes (FR-9).
 - State modeled as a Rails enum (string-backed) for clarity; `percentage`
   defaults to 0 and is only meaningful for `percentage` and
   `groups_and_percentage` states.
-- Aim for a single migration to create the schema in the dummy app; the
-  install generator (T14) packages these migrations for host apps.
+- The schema currently spans three migration files (see `db/migrate/*`); the
+  install generator (T14) packages them for host apps.
 
 **Testing requirements**
 

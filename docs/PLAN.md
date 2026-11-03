@@ -173,7 +173,8 @@ no FKs by design) — plus `Dwar::Flag`,
 
 **Technical considerations:** Explicit `self.table_name` per model (or
 `Dwar.table_name_prefix`) — pick one and stay consistent. String-backed enum for
-state. Aim for a single migration; T14 packages it for hosts.
+state. The schema currently spans three migration files (see `db/migrate/*`);
+T14 packages them for hosts.
 
 **Testing:** Model unit tests (validations, associations, join cleanup, membership uniqueness); migration up/down in the dummy app.
 
