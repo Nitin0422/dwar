@@ -160,25 +160,27 @@ root in both `test` and `development`.
 
 **Description**
 
-Migrations and models for the five tables: `dwar_flags` (unique key, state,
-percentage), `dwar_groups` (unique name, optional description),
+Migrations and models for the four T03 tables: `dwar_flags` (unique key,
+state, percentage), `dwar_groups` (unique name, optional description),
 `dwar_flag_groups` (join: flag ↔ targeted groups), `dwar_group_memberships`
-(polymorphic actor reference), `dwar_audits` (audit trail; no FKs by design).
-Models: `Dwar::Flag`, `Dwar::Group`,
-`Dwar::FlagGroup`, `Dwar::GroupMembership`, `Dwar::Audit` with validations, associations, and
-the flag state enum. All internals namespaced under `Dwar::` with `dwar_`
-table prefixes (FR-9).
+(polymorphic actor reference). Models: `Dwar::Flag`, `Dwar::Group`,
+`Dwar::FlagGroup`, `Dwar::GroupMembership` with validations, associations, and
+the flag state enum. `dwar_audits` / `Dwar::Audit` are T13's deliverable; the
+schema currently spans five tables across three migration files (see
+`db/migrate/*`). All internals namespaced under `Dwar::` with `dwar_` table
+prefixes (FR-9).
 
 **Acceptance criteria**
 
-- [ ] Migrations create all engine tables with the `dwar_` prefix (currently
-      five tables across three migration files — see `db/migrate/*`), foreign keys,
-      and indexes: unique index on `dwar_flags.key`; unique index on
+- [ ] Migrations create the four T03 tables with the `dwar_` prefix, foreign
+      keys, and indexes: unique index on `dwar_flags.key`; unique index on
       `dwar_groups.name`; unique compound index on
       `dwar_flag_groups(flag_id, group_id)`; unique compound index on
-      `dwar_group_memberships(group_id, actor_type, actor_id)`; `dwar_audits`
-      indexed on `(auditable_type, auditable_id)`, `created_at`,
-      `(actor_type, actor_id)` with no FKs by design.
+      `dwar_group_memberships(group_id, actor_type, actor_id)`. The schema
+      currently spans five tables across three migration files (see
+      `db/migrate/*`); the fifth, `dwar_audits`, is T13's and has indexes on
+      `(auditable_type, auditable_id)`, `created_at`, `(actor_type, actor_id)`
+      with no FKs by design.
 - [ ] Migrations are reversible (up/down) and run cleanly in the dummy app.
 - [ ] `Flag` has: `key` (presence, uniqueness, sensible format e.g. `\A[a-z0-9_/.-]+\z`),
       state enum `disabled | enabled | percentage | groups | groups_and_percentage`,
@@ -568,9 +570,10 @@ nil → null actor).
 
 **Acceptance criteria**
 
-- [ ] `dwar_audits` migration + model: auditable type/id, action
-      (create/update/destroy), change summary (serialized), optional admin
-      type/id (who), created_at (when).
+- [ ] `dwar_audits` migration + model: `auditable_type`/`auditable_id`,
+      `action` (create/update/destroy), `change_summary` (serialized),
+      nullable `actor_type`/`actor_id` (who; polymorphic-by-convention, no FK),
+      `created_at`/`updated_at`.
 - [ ] Every flag create/update/destroy, group create/update/destroy, and
       membership add/remove writes an audit row in the same transaction; flag
       targeting changes are audited as flag updates.

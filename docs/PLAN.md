@@ -156,14 +156,15 @@ routes, and configuration.
 
 ### T03 — Build the data model (migrations + models)
 
-**Requirements:** Five tables — `dwar_flags` (key, state, percentage),
-`dwar_groups` (name, description), `dwar_flag_groups` (flag↔group join),
-`dwar_group_memberships` (polymorphic actor), `dwar_audits` (audit trail;
-no FKs by design) — plus `Dwar::Flag`,
-`Dwar::Group`, `Dwar::FlagGroup`, `Dwar::GroupMembership`, `Dwar::Audit`.
+**Requirements:** Four tables delivered by this task — `dwar_flags` (key,
+state, percentage), `dwar_groups` (name, description), `dwar_flag_groups`
+(flag↔group join), `dwar_group_memberships` (polymorphic actor) — plus
+`Dwar::Flag`, `Dwar::Group`, `Dwar::FlagGroup`, `Dwar::GroupMembership`.
+(`dwar_audits` / `Dwar::Audit` are T13's deliverable; the schema currently
+spans five tables across three migration files — see `db/migrate/*`.)
 
 **Acceptance criteria**
-- [ ] Migrations create all engine `dwar_`-prefixed tables (currently five tables across three migration files — see `db/migrate/*`) with FKs and indexes: unique `dwar_flags.key`; unique `dwar_groups.name`; unique compound `dwar_flag_groups(flag_id, group_id)`; unique compound `dwar_group_memberships(group_id, actor_type, actor_id)`; `dwar_audits` indexed on `(auditable_type, auditable_id)`, `created_at`, `(actor_type, actor_id)` with no FKs by design.
+- [ ] Migrations create the four T03 `dwar_`-prefixed tables with FKs and indexes: unique `dwar_flags.key`; unique `dwar_groups.name`; unique compound `dwar_flag_groups(flag_id, group_id)`; unique compound `dwar_group_memberships(group_id, actor_type, actor_id)`. The schema currently spans five tables across three migration files (see `db/migrate/*`); the fifth, `dwar_audits`, is T13's and has indexes — `(auditable_type, auditable_id)`, `created_at`, `(actor_type, actor_id)` — with no FKs by design.
 - [ ] Migrations reversible; run cleanly in the dummy app.
 - [ ] `Flag`: `key` presence/uniqueness/format (`\A[a-z0-9_/.-]+\z`); state enum `disabled | enabled | percentage | groups | groups_and_percentage`; `percentage` integer 0–100 validated where used.
 - [ ] `Group`: `name` presence/uniqueness; optional `description`.
@@ -350,7 +351,7 @@ the same transaction as the change, plus a minimal admin list view
 admin request context (nil ⇒ null actor).
 
 **Acceptance criteria**
-- [ ] `dwar_audits` migration + model: auditable type/id, action, change summary, optional admin type/id, `created_at`.
+- [ ] `dwar_audits` migration + model: `auditable_type`/`auditable_id`, `action`, `change_summary`, nullable `actor_type`/`actor_id` (polymorphic-by-convention, no FK), `created_at`/`updated_at`.
 - [ ] Every flag/group create/update/destroy and membership add/remove writes an audit row in the same transaction; flag targeting changes audit as flag updates.
 - [ ] `who` recorded when `config.audit_actor` is configured; null otherwise.
 - [ ] Audits index lists entries newest-first with a readable action/type/key summary.

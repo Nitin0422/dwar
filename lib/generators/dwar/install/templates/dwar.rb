@@ -39,9 +39,11 @@ Dwar.configure do |config|
   # config.admin_path = "/dwar"
 
   # Gatekeeper for the admin UI: a callable evaluated with the controller.
-  # nil (or a non-callable value) denies every request with a 403 "not
-  # configured" response; a callable that returns falsy also denies with a
-  # 403 "access denied" response; a hook that raises propagates as a 500
+  # nil (or a non-callable value) denies every request with a 403
+  # "Dwar admin is disabled: no authorization hook configured" response; a
+  # callable that returns falsy also denies with a
+  # 403 "Dwar admin access denied: the authorization hook returned a falsy
+  # value" response; a hook that raises propagates as a 500
   # (fail-loud). Default: nil
   # config.authorization = ->(controller) { controller.current_user.admin? }
 
