@@ -14,30 +14,25 @@
       main { padding: 2rem; }
       /* Dwar design tokens: --dwar-accent (#4f46e5), --dwar-accent-hover
          (#4338ca), --dwar-danger (#b91c1c), --dwar-danger-hover (#991b1b),
-         --dwar-text (#111827), --dwar-muted (#6b7280), --dwar-border
-         (#d1d5db), --dwar-surface (#ffffff), --dwar-surface-muted (#f9fafb),
-         --dwar-radius (6px), --dwar-control-height (32px). */
+         --dwar-text (#111827), --dwar-border (#d1d5db), --dwar-surface
+         (#ffffff), --dwar-surface-muted (#f9fafb), --dwar-radius (6px),
+         --dwar-control-height (32px). */
       main {
         --dwar-accent: #4f46e5;
         --dwar-accent-hover: #4338ca;
         --dwar-danger: #b91c1c;
         --dwar-danger-hover: #991b1b;
         --dwar-text: #111827;
-        --dwar-muted: #6b7280;
         --dwar-border: #d1d5db;
         --dwar-surface: #ffffff;
         --dwar-surface-muted: #f9fafb;
         --dwar-radius: 6px;
         --dwar-control-height: 32px;
       }
-      /* Tables are styled through descendant selectors; the table tag itself
-         stays bare (audits/flags tests assert the literal markup). */
-      main table { border-collapse: collapse; width: 100%; }
-      main th, main td { text-align: left; padding: 0.5rem 0.75rem; vertical-align: middle; }
-      main th { background: var(--dwar-surface-muted); font-size: 0.8125rem; }
-      /* Forms: stacked controls, labels above fields, ~680px content width. */
+      /* Forms: stacked controls, labels above fields, ~680px content width.
+         The error container keeps its own layout. */
       main form:not(.button_to) { display: grid; gap: 1rem; max-width: 680px; }
-      main form:not(.button_to) > div { display: grid; gap: 0.35rem; }
+      main form:not(.button_to) > div:not(#error_explanation) { display: grid; gap: 0.35rem; }
       main form.dwar-search { display: flex; max-width: none; }
       main form.dwar-search > div { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.5rem; }
       main form.button_to { display: inline; margin: 0; }
@@ -83,25 +78,25 @@
         cursor: pointer;
       }
       main .dwar-btn:hover { background: var(--dwar-surface-muted); }
-      main .dwar-btn--primary,
+      main .dwar-btn.dwar-btn--primary,
       main form:not(.button_to) input[type="submit"],
       main form:not(.button_to) button[type="submit"] {
         border-color: var(--dwar-accent);
         background: var(--dwar-accent);
         color: #fff;
       }
-      main .dwar-btn--primary:hover,
+      main .dwar-btn.dwar-btn--primary:hover,
       main form:not(.button_to) input[type="submit"]:hover,
       main form:not(.button_to) button[type="submit"]:hover {
         border-color: var(--dwar-accent-hover);
         background: var(--dwar-accent-hover);
       }
-      main .dwar-btn--danger {
+      main .dwar-btn.dwar-btn--danger {
         border-color: var(--dwar-danger);
         background: var(--dwar-danger);
         color: #fff;
       }
-      main .dwar-btn--danger:hover {
+      main .dwar-btn.dwar-btn--danger:hover {
         border-color: var(--dwar-danger-hover);
         background: var(--dwar-danger-hover);
       }
