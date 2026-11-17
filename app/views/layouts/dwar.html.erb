@@ -12,6 +12,131 @@
       nav a { color: #c4c4e8; text-decoration: none; margin-right: 1rem; }
       nav a:hover { color: #fff; }
       main { padding: 2rem; }
+      /* Dwar design tokens: --dwar-accent (#4f46e5), --dwar-accent-hover
+         (#4338ca), --dwar-danger (#b91c1c), --dwar-danger-hover (#991b1b),
+         --dwar-text (#111827), --dwar-muted (#6b7280), --dwar-border
+         (#d1d5db), --dwar-surface (#ffffff), --dwar-surface-muted (#f9fafb),
+         --dwar-radius (6px), --dwar-control-height (32px). */
+      main {
+        --dwar-accent: #4f46e5;
+        --dwar-accent-hover: #4338ca;
+        --dwar-danger: #b91c1c;
+        --dwar-danger-hover: #991b1b;
+        --dwar-text: #111827;
+        --dwar-muted: #6b7280;
+        --dwar-border: #d1d5db;
+        --dwar-surface: #ffffff;
+        --dwar-surface-muted: #f9fafb;
+        --dwar-radius: 6px;
+        --dwar-control-height: 32px;
+      }
+      /* Tables are styled through descendant selectors; the table tag itself
+         stays bare (audits/flags tests assert the literal markup). */
+      main table { border-collapse: collapse; width: 100%; }
+      main th, main td { text-align: left; padding: 0.5rem 0.75rem; vertical-align: middle; }
+      main th { background: var(--dwar-surface-muted); font-size: 0.8125rem; }
+      /* Forms: stacked controls, labels above fields, ~680px content width. */
+      main form:not(.button_to) { display: grid; gap: 1rem; max-width: 680px; }
+      main form:not(.button_to) > div { display: grid; gap: 0.35rem; }
+      main form.dwar-search { display: flex; max-width: none; }
+      main form.dwar-search > div { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.5rem; }
+      main form.button_to { display: inline; margin: 0; }
+      main label { color: var(--dwar-text); font-weight: 500; }
+      /* Shared control styling; global element selectors also cover host
+         markup such as the memberships add-member form. */
+      main input[type="text"],
+      main input[type="search"],
+      main input[type="number"],
+      main select,
+      main textarea {
+        box-sizing: border-box;
+        width: 100%;
+        min-height: var(--dwar-control-height);
+        padding: 0.35rem 0.5rem;
+        border: 1px solid var(--dwar-border);
+        border-radius: var(--dwar-radius);
+        background: var(--dwar-surface);
+        color: var(--dwar-text);
+        font: inherit;
+      }
+      main textarea { min-height: 5rem; }
+      main form.dwar-search input[type="search"] { width: auto; }
+      /* Shared button family (links, input submits, button submits). */
+      main .dwar-btn,
+      main input[type="submit"],
+      main button[type="submit"] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        justify-self: start;
+        box-sizing: border-box;
+        min-height: var(--dwar-control-height);
+        padding: 0 0.85rem;
+        border: 1px solid var(--dwar-border);
+        border-radius: var(--dwar-radius);
+        background: var(--dwar-surface);
+        color: var(--dwar-text);
+        font: inherit;
+        font-weight: 500;
+        line-height: 1;
+        text-decoration: none;
+        cursor: pointer;
+      }
+      main .dwar-btn:hover { background: var(--dwar-surface-muted); }
+      main .dwar-btn--primary,
+      main form:not(.button_to) input[type="submit"],
+      main form:not(.button_to) button[type="submit"] {
+        border-color: var(--dwar-accent);
+        background: var(--dwar-accent);
+        color: #fff;
+      }
+      main .dwar-btn--primary:hover,
+      main form:not(.button_to) input[type="submit"]:hover,
+      main form:not(.button_to) button[type="submit"]:hover {
+        border-color: var(--dwar-accent-hover);
+        background: var(--dwar-accent-hover);
+      }
+      main .dwar-btn--danger {
+        border-color: var(--dwar-danger);
+        background: var(--dwar-danger);
+        color: #fff;
+      }
+      main .dwar-btn--danger:hover {
+        border-color: var(--dwar-danger-hover);
+        background: var(--dwar-danger-hover);
+      }
+      /* Index-table action cluster. */
+      main .dwar-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+      /* Flag group picker: scrollable checkbox panel inside a fieldset. */
+      main .dwar-group-picker {
+        margin: 0;
+        padding: 0.5rem 0.75rem 0.75rem;
+        border: 1px solid var(--dwar-border);
+        border-radius: var(--dwar-radius);
+      }
+      main .dwar-group-picker legend { padding: 0 0.35rem; font-weight: 600; color: var(--dwar-text); }
+      main .dwar-checkbox-list { display: grid; gap: 0.125rem; max-height: 16rem; overflow-y: auto; }
+      main .dwar-checkbox {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.3rem 0.5rem;
+        border-radius: 4px;
+        font-weight: 400;
+        cursor: pointer;
+      }
+      main .dwar-checkbox:hover { background: var(--dwar-surface-muted); }
+      main .dwar-checkbox input[type="checkbox"] { width: 1rem; height: 1rem; margin: 0; accent-color: var(--dwar-accent); }
+      /* Visible keyboard focus ring. */
+      main a:focus-visible,
+      main button:focus-visible,
+      main input:focus-visible,
+      main select:focus-visible,
+      main textarea:focus-visible { outline: 2px solid var(--dwar-accent); outline-offset: 2px; }
+      @media (max-width: 640px) {
+        main { padding: 1rem; }
+        main form.dwar-search input[type="search"] { flex: 1 1 100%; width: 100%; }
+      }
     </style>
   </head>
   <body>

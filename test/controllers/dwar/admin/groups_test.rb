@@ -36,12 +36,17 @@ class GroupsAdminTest < ActionDispatch::IntegrationTest
   end
 
   test "index destroy control carries a confirmation prompt" do
-    Dwar::Group.create!(name: "confirm_me")
+    group = Dwar::Group.create!(name: "confirm_me")
 
     get "/dwar/admin/groups"
 
     assert_response :success
     assert_includes response.body, "data-turbo-confirm"
+    assert_select "div.dwar-actions form.button_to[action='/dwar/admin/groups/#{group.id}']", 1
+    assert_select "form.button_to[action='/dwar/admin/groups/#{group.id}'] " \
+      "input[name='_method'][value='delete']", 1
+    assert_select "form.button_to[action='/dwar/admin/groups/#{group.id}'] " \
+      "button[type='submit'].dwar-btn--danger", text: "Destroy"
   end
 
   # AC: the groups list is capped at 200 rows, ordered by name, with a

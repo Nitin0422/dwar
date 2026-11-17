@@ -1,8 +1,8 @@
 <h1>Flags</h1>
 
-<p><%= link_to "New flag", new_admin_flag_path %></p>
+<p><%= link_to "New flag", new_admin_flag_path, class: "dwar-btn dwar-btn--primary" %></p>
 
-<%= form_with url: admin_flags_path, method: :get, local: true do |form| %>
+<%= form_with url: admin_flags_path, method: :get, local: true, class: "dwar-search" do |form| %>
   <div>
     <%= form.label :q, "Search" %>
     <%= form.search_field :q, value: params[:q] %>
@@ -41,8 +41,13 @@
             <% end %>
           </td>
           <td>
-            <%= link_to "Edit", edit_admin_flag_path(flag) %>
-            <%= button_to "Destroy", admin_flag_path(flag), method: :delete, form: {data: {turbo_confirm: "Are you sure?"}} %>
+            <div class="dwar-actions">
+              <%= link_to "Edit", edit_admin_flag_path(flag), class: "dwar-btn" %>
+              <%= button_to "Destroy", admin_flag_path(flag),
+                  method: :delete,
+                  class: "dwar-btn dwar-btn--danger",
+                  form: {class: "button_to dwar-action-form", data: {turbo_confirm: "Are you sure?"}} %>
+            </div>
           </td>
         </tr>
       <% end %>

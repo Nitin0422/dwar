@@ -85,6 +85,24 @@ class MembershipsAdminTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "No members yet."
   end
 
+  # AC: Remove is a danger-styled form button that still posts a delete
+  # method with the turbo confirmation prompt.
+  test "index remove control is a danger button with delete method and confirmation" do
+    group = Dwar::Group.create!(name: "beta")
+    user = User.create!(name: "alice")
+    membership = Dwar::GroupMembership.create!(group: group, actor: user)
+    path = "#{members_path(group)}/#{membership.id}"
+
+    get members_path(group)
+
+    assert_response :success
+    assert_includes response.body, "data-turbo-confirm"
+    assert_select "div.dwar-actions form.button_to[action='#{path}']", 1
+    assert_select "form.button_to[action='#{path}'] input[name='_method'][value='delete']", 1
+    assert_select "form.button_to[action='#{path}'] " \
+      "button[type='submit'].dwar-btn--danger", text: "Remove"
+  end
+
   # AC: adding a picker result persists a GroupMembership and redirects.
   test "create persists a membership and redirects to the member list" do
     group = Dwar::Group.create!(name: "beta")

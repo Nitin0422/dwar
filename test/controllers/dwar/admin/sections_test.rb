@@ -87,4 +87,16 @@ class SectionsTest < ActionDispatch::IntegrationTest
     assert_match %r{/dwar/admin/groups/\d+/memberships}, response.body
     assert_includes response.body, "Manage members"
   end
+
+  # AC: UI-01 styles ship in the existing inline style block as design
+  # tokens, so no asset pipeline or host setup is required.
+  test "redesigned flag form ships inline design tokens and picker styles" do
+    get "/dwar/admin/flags/new"
+
+    assert_response :success
+    assert_includes response.body, "--dwar-accent: #4f46e5"
+    assert_includes response.body, ".dwar-checkbox-list"
+    assert_includes response.body, "overflow-y: auto"
+    assert_includes response.body, ".dwar-btn--danger"
+  end
 end

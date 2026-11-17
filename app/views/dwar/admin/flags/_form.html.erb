@@ -30,14 +30,20 @@
     <%= form.number_field :percentage, in: 0..100 %>
   </div>
 
-  <div>
-    <%= form.label :group_ids, "Groups" %>
-    <%= hidden_field_tag "flag[group_ids][]", "" %>
-    <%= form.collection_select :group_ids, group_options, :id, :name, {}, {multiple: true} %>
+  <fieldset class="dwar-group-picker">
+    <legend>Groups</legend>
+    <div class="dwar-checkbox-list">
+      <%= form.collection_check_boxes :group_ids, group_options, :id, :name do |builder| %>
+        <%= builder.label(class: "dwar-checkbox") do %>
+          <%= builder.check_box %>
+          <%= builder.text %>
+        <% end %>
+      <% end %>
+    </div>
     <% if group_options_capped? %>
       <p>Showing up to <%= Dwar::Admin::FlagsController::GROUP_OPTIONS_LIMIT %> groups; groups already targeted by this flag are always included.</p>
     <% end %>
-  </div>
+  </fieldset>
 
   <div>
     <%= form.submit %>
