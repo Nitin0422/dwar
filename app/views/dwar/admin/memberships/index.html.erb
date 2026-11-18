@@ -1,6 +1,6 @@
 <h1>Members of <%= @group.name %></h1>
 
-<p><%= link_to "Back to groups", admin_groups_path %></p>
+<p><%= link_to "Back to groups", admin_groups_path, class: "dwar-btn" %></p>
 
 <% if @membership.errors.any? %>
   <div id="error_explanation">
@@ -28,7 +28,12 @@
           <td><%= @member_labels[membership.id] %></td>
           <td><%= membership.actor_type %> #<%= membership.actor_id %></td>
           <td>
-            <%= button_to "Remove", admin_group_membership_path(@group, membership), method: :delete, form: {data: {turbo_confirm: "Are you sure?"}} %>
+            <div class="dwar-actions">
+              <%= button_to "Remove", admin_group_membership_path(@group, membership),
+                  method: :delete,
+                  class: "dwar-btn dwar-btn--danger",
+                  form: {class: "button_to", data: {turbo_confirm: "Are you sure?"}} %>
+            </div>
           </td>
         </tr>
       <% end %>

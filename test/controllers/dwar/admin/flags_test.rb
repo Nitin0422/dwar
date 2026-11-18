@@ -64,8 +64,9 @@ class FlagsAdminTest < ActionDispatch::IntegrationTest
     get "/dwar/admin/flags/new"
 
     assert_response :success
-    assert_select "select[name='flag[group_ids][]'] option", 200
-    assert_includes response.body, "Showing up to 200 groups"
+    assert_select "fieldset.dwar-group-picker input[type='checkbox'][name='flag[group_ids][]']", 200
+    assert_includes response.body,
+      "Showing up to 200 groups; groups already targeted by this flag are always included."
   end
 
   test "new form omits the cap note when there are fewer groups than the cap" do
@@ -87,8 +88,8 @@ class FlagsAdminTest < ActionDispatch::IntegrationTest
     get "/dwar/admin/flags/#{flag.id}/edit"
 
     assert_response :success
-    assert_select "select[name='flag[group_ids][]'] option", 201
-    assert_select "option[value='#{target.id}'][selected]"
+    assert_select "fieldset.dwar-group-picker input[type='checkbox'][name='flag[group_ids][]']", 201
+    assert_select "input[type='checkbox'][name='flag[group_ids][]'][value='#{target.id}'][checked]", 1
     assert_includes response.body, "groups already targeted by this flag are always included"
   end
 
@@ -102,9 +103,9 @@ class FlagsAdminTest < ActionDispatch::IntegrationTest
     get "/dwar/admin/flags/#{flag.id}/edit"
 
     assert_response :success
-    assert_select "select[name='flag[group_ids][]'] option", 200
-    assert_select "option[value='#{target.id}']", 1
-    assert_select "option[value='#{target.id}'][selected]"
+    assert_select "fieldset.dwar-group-picker input[type='checkbox'][name='flag[group_ids][]']", 200
+    assert_select "input[type='checkbox'][name='flag[group_ids][]'][value='#{target.id}']", 1
+    assert_select "input[type='checkbox'][name='flag[group_ids][]'][value='#{target.id}'][checked]", 1
   end
 
   # The union is sorted by name as a whole, not capped names followed by the
@@ -117,7 +118,10 @@ class FlagsAdminTest < ActionDispatch::IntegrationTest
     get "/dwar/admin/flags/#{flag.id}/edit"
 
     assert_response :success
-    names = css_select("select[name='flag[group_ids][]'] option").map { |option| option.text.strip }
+    by_id = groups.index_by(&:id)
+    checkbox_values = css_select("fieldset.dwar-group-picker input[type='checkbox'][name='flag[group_ids][]']")
+      .map { |checkbox| checkbox["value"].to_i }
+    names = checkbox_values.map { |id| by_id.fetch(id).name }
     expected = (groups.first(200).map(&:name) + off_cap.map(&:name)).sort
     assert_equal expected, names
   end
@@ -131,7 +135,7 @@ class FlagsAdminTest < ActionDispatch::IntegrationTest
       params: {flag: {key: "", state: "groups", group_ids: [target.id]}}
 
     assert_response :unprocessable_entity
-    assert_select "option[value='#{target.id}'][selected]"
+    assert_select "input[type='checkbox'][name='flag[group_ids][]'][value='#{target.id}'][checked]", 1
   end
 
   # An invalid update keeps the submitted selection, including an off-cap group.
@@ -144,7 +148,31 @@ class FlagsAdminTest < ActionDispatch::IntegrationTest
       params: {flag: {key: "", state: "groups", group_ids: [target.id]}}
 
     assert_response :unprocessable_entity
-    assert_select "option[value='#{target.id}'][selected]"
+    assert_select "input[type='checkbox'][name='flag[group_ids][]'][value='#{target.id}'][checked]", 1
+  end
+
+  # AC: the picker is a fieldset with a legend and one wrapped checkbox per
+  # option; collection_check_boxes supplies the single blank hidden input.
+  test "group picker renders a fieldset of wrapped checkboxes with one blank hidden input" do
+    alpha = Dwar::Group.create!(name: "alpha")
+    beta = Dwar::Group.create!(name: "beta")
+
+    get "/dwar/admin/flags/new"
+
+    assert_response :success
+    assert_select "fieldset.dwar-group-picker > legend", text: "Groups"
+
+    assert_select "fieldset.dwar-group-picker label.dwar-checkbox" do |labels|
+      assert_equal %w[alpha beta], labels.map { |label| label.text.strip }
+    end
+    [alpha, beta].each do |group|
+      assert_select "fieldset.dwar-group-picker label.dwar-checkbox " \
+        "input[type='checkbox'][name='flag[group_ids][]'][value='#{group.id}']", 1
+    end
+
+    assert_select "input[type='hidden'][name='flag[group_ids][]']", 1
+    hidden = css_select("input[type='hidden'][name='flag[group_ids][]']").first
+    assert_equal "", hidden["value"].to_s
   end
 
   # CRUD: create --------------------------------------------------------
@@ -297,6 +325,11 @@ class FlagsAdminTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "data-turbo-confirm"
     assert_match %r{<form[^>]*action="/dwar/admin/flags/#{flag.id}"}, response.body
     assert_includes response.body, 'value="delete"'
+    assert_select "div.dwar-actions form.button_to[action='/dwar/admin/flags/#{flag.id}']", 1
+    assert_select "form.button_to[action='/dwar/admin/flags/#{flag.id}'] " \
+      "input[name='_method'][value='delete']", 1
+    assert_select "form.button_to[action='/dwar/admin/flags/#{flag.id}'] " \
+      "button[type='submit'].dwar-btn--danger", text: "Destroy"
   end
 
   # All five states via the UI drive Dwar.enabled? ----------------------
