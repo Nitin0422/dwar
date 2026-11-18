@@ -103,6 +103,22 @@ class SectionsTest < ActionDispatch::IntegrationTest
     assert_includes style, ".dwar-checkbox-list"
     assert_includes style, "overflow-y: auto"
 
+    # WCAG 2.1 AA 1.4.11: #6b7280 is 4.83:1 vs #fff (4.63:1 vs #f9fafb).
+    assert_includes style, "--dwar-border: #6b7280"
+
+    # The search flex rule must follow the generic field-wrapper grid rule,
+    # without an ID inside :not() raising its specificity.
+    assert_includes style, "main #error_explanation { display: block; }"
+    refute_includes style, ":not(#error_explanation)"
+    field_rule = style.index("main form:not(.button_to) > div {")
+    search_rule = style.index("main form.dwar-search > div {")
+    refute_nil field_rule
+    refute_nil search_rule
+    assert_operator field_rule, :<, search_rule
+
+    # Bare <table> tag: only the descendant alignment rule is allowed.
+    assert_includes style, "main td { vertical-align: middle; }"
+
     # Pin the cascade contract, not just the presence of a substring: the
     # compound selectors carry two class tokens and therefore outrank the
     # base `input[type="submit"]` / `button[type="submit"]` rules. A

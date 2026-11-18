@@ -14,7 +14,7 @@
       main { padding: 2rem; }
       /* Dwar design tokens: --dwar-accent (#4f46e5), --dwar-accent-hover
          (#4338ca), --dwar-danger (#b91c1c), --dwar-danger-hover (#991b1b),
-         --dwar-text (#111827), --dwar-border (#d1d5db), --dwar-surface
+         --dwar-text (#111827), --dwar-border (#6b7280), --dwar-surface
          (#ffffff), --dwar-surface-muted (#f9fafb), --dwar-radius (6px),
          --dwar-control-height (32px). */
       main {
@@ -23,16 +23,20 @@
         --dwar-danger: #b91c1c;
         --dwar-danger-hover: #991b1b;
         --dwar-text: #111827;
-        --dwar-border: #d1d5db;
+        /* UI boundaries: #6b7280 is 4.83:1 vs #fff and 4.63:1 vs #f9fafb,
+           meeting WCAG 2.1 AA 1.4.11 non-text contrast (>= 3:1). */
+        --dwar-border: #6b7280;
         --dwar-surface: #ffffff;
         --dwar-surface-muted: #f9fafb;
         --dwar-radius: 6px;
         --dwar-control-height: 32px;
       }
       /* Forms: stacked controls, labels above fields, ~680px content width.
-         The error container keeps its own layout. */
+         Keep the error container out of the field-wrapper grid via its own
+         ID rule; an ID inside :not() here would outrank the search rule. */
       main form:not(.button_to) { display: grid; gap: 1rem; max-width: 680px; }
-      main form:not(.button_to) > div:not(#error_explanation) { display: grid; gap: 0.35rem; }
+      main form:not(.button_to) > div { display: grid; gap: 0.35rem; }
+      main #error_explanation { display: block; }
       main form.dwar-search { display: flex; max-width: none; }
       main form.dwar-search > div { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.5rem; }
       main form.button_to { display: inline; margin: 0; }
@@ -100,7 +104,9 @@
         border-color: var(--dwar-danger-hover);
         background: var(--dwar-danger-hover);
       }
-      /* Index-table action cluster. */
+      /* Index-table action cluster. The table tag stays bare; only the
+         minimum descendant rule needed to align row actions. */
+      main td { vertical-align: middle; }
       main .dwar-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
       /* Flag group picker: scrollable checkbox panel inside a fieldset. */
       main .dwar-group-picker {
