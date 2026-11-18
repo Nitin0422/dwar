@@ -66,10 +66,11 @@ jobs:
       - uses: ruby/setup-ruby@v1
         with:
           # Pin the lint job to the Ruby 3.4 minor explicitly so a new
-          # ubuntu-latest runner image whose ruby 3.4.x patch build is not yet
-          # available cannot break lint (setup-ruby resolves the latest
-          # available 3.4.x). .ruby-version remains the local development pin,
-          # and the test matrix still covers 3.2/3.3/3.4 per gemspec >= 3.2.
+          # ubuntu-latest image where the exact .ruby-version patch (3.4.2) is
+          # unpublishable/unavailable cannot break lint, because setup-ruby
+          # resolves the latest available 3.4.x. .ruby-version remains the
+          # local development pin, and the test matrix still covers
+          # 3.2/3.3/3.4 per gemspec >= 3.2.
           ruby-version: "3.4"
           bundler-cache: true
       - run: bundle exec standardrb
