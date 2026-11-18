@@ -97,10 +97,19 @@ class SectionsTest < ActionDispatch::IntegrationTest
     get "/dwar/admin/flags/new"
 
     assert_response :success
-    assert_includes response.body, "--dwar-accent: #4f46e5"
-    assert_includes response.body, ".dwar-checkbox-list"
-    assert_includes response.body, "overflow-y: auto"
-    assert_includes response.body, "main .dwar-btn.dwar-btn--primary"
-    assert_includes response.body, "main .dwar-btn.dwar-btn--danger"
+    style = css_select("head style").first.text
+
+    assert_includes style, "--dwar-accent: #4f46e5"
+    assert_includes style, ".dwar-checkbox-list"
+    assert_includes style, "overflow-y: auto"
+
+    # Pin the cascade contract, not just the presence of a substring: the
+    # compound selectors carry two class tokens and therefore outrank the
+    # base `input[type="submit"]` / `button[type="submit"]` rules. A
+    # regression back to the single-class form must fail this test.
+    assert_match(/main \.dwar-btn\.dwar-btn--primary\s*[,{]/, style)
+    assert_match(/main \.dwar-btn\.dwar-btn--danger\s*\{/, style)
+    refute_match(/main \.dwar-btn--primary\s*[,{]/, style)
+    refute_match(/main \.dwar-btn--danger\s*[,{]/, style)
   end
 end
