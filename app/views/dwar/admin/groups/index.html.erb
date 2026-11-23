@@ -1,39 +1,61 @@
-<h1>Groups</h1>
+<div class="dwar-page-header">
+  <div>
+    <h1>Groups</h1>
+    <p class="dwar-page-subtitle">Create and manage groups used for flag targeting.</p>
+  </div>
 
-<p><%= link_to "New group", new_admin_group_path, class: "dwar-btn dwar-btn--primary" %></p>
+  <%= link_to "New group", new_admin_group_path, class: "dwar-btn dwar-btn--primary" %>
+</div>
 
-<p>Showing up to <%= Dwar::Admin::GroupsController::GROUP_LIMIT %> groups, ordered by name. Pagination is not yet implemented.</p>
+<div class="dwar-card">
+  <div class="dwar-card__header">
+    <h2>All groups</h2>
+    <p class="dwar-hint">
+      Showing up to <%= Dwar::Admin::GroupsController::GROUP_LIMIT %> groups, ordered by name.
+      Pagination is not yet implemented.
+    </p>
+  </div>
 
-<% if @groups.any? %>
-  <table>
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Description</th>
-        <th>Members</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% @groups.each do |group| %>
+  <div class="dwar-table-wrap">
+    <table>
+      <thead>
         <tr>
-          <td><%= group.name %></td>
-          <td><%= group.description %></td>
-          <td><%= @member_counts[group.id] || 0 %></td>
-          <td>
-            <div class="dwar-actions">
-              <%= link_to "Manage members", admin_group_memberships_path(group), class: "dwar-btn" %>
-              <%= link_to "Edit", edit_admin_group_path(group), class: "dwar-btn" %>
-              <%= button_to "Destroy", admin_group_path(group),
-                  method: :delete,
-                  class: "dwar-btn dwar-btn--danger",
-                  form: {class: "button_to", data: {turbo_confirm: "Are you sure?"}} %>
-            </div>
-          </td>
+          <th>Name</th>
+          <th>Description</th>
+          <th>Members</th>
+          <th class="dwar-col-actions">Actions</th>
         </tr>
-      <% end %>
-    </tbody>
-  </table>
-<% else %>
-  <p>No groups found.</p>
-<% end %>
+      </thead>
+      <tbody>
+        <% if @groups.any? %>
+          <% @groups.each do |group| %>
+            <tr>
+              <td class="dwar-row-key"><%= group.name %></td>
+              <td class="dwar-cell-muted"><%= group.description %></td>
+              <td><%= @member_counts[group.id] || 0 %></td>
+              <td class="dwar-col-actions">
+                <div class="dwar-actions dwar-actions--end">
+                  <%= link_to "Manage members", admin_group_memberships_path(group), class: "dwar-btn" %>
+                  <%= link_to "Edit", edit_admin_group_path(group), class: "dwar-btn" %>
+                  <%= button_to "Destroy", admin_group_path(group),
+                      method: :delete,
+                      class: "dwar-btn dwar-btn--danger",
+                      form: {class: "button_to", data: {turbo_confirm: "Are you sure?"}} %>
+                </div>
+              </td>
+            </tr>
+          <% end %>
+        <% else %>
+          <tr>
+            <td colspan="4" class="dwar-empty-cell">
+              <div class="dwar-empty">
+                <p class="dwar-empty__title">No groups found.</p>
+                <p class="dwar-empty__text">Get started by creating your first group.</p>
+              </div>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
