@@ -1,51 +1,77 @@
-<%= form_with model: [:admin, @flag], local: true do |form| %>
-  <% if @flag.errors.any? %>
-    <div id="error_explanation">
-      <h2><%= pluralize(@flag.errors.count, "error") %> prohibited this flag from being saved:</h2>
-      <ul>
-        <% @flag.errors.full_messages.each do |message| %>
-          <li><%= message %></li>
-        <% end %>
-      </ul>
+<div class="dwar-form-page">
+  <div class="dwar-page-header">
+    <div>
+      <h1><%= @flag.persisted? ? "Edit flag" : "New flag" %></h1>
+      <p class="dwar-page-subtitle">Configure feature flag settings, state, and targeting rules.</p>
+    </div>
+
+    <%= link_to "Back", admin_flags_path, class: "dwar-btn" %>
+  </div>
+
+  <%= form_with model: [:admin, @flag], local: true, class: "dwar-form" do |form| %>
+    <div class="dwar-card">
+      <% if @flag.errors.any? %>
+        <div id="error_explanation" class="dwar-alert">
+          <h3><%= pluralize(@flag.errors.count, "error") %> prohibited this flag from being saved:</h3>
+
+          <ul>
+            <% @flag.errors.full_messages.each do |message| %>
+              <li><%= message %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+
+      <div class="dwar-card__header">
+        <h2>Flag details</h2>
+        <p class="dwar-hint">Define the flag and configure how it is enabled.</p>
+      </div>
+
+      <div class="dwar-card__body">
+        <div class="dwar-field">
+          <%= form.label :key %>
+          <%= form.text_field :key %>
+        </div>
+
+        <div class="dwar-field">
+          <%= form.label :description %>
+          <%= form.text_area :description, rows: 4 %>
+        </div>
+
+        <div class="dwar-field">
+          <%= form.label :state %>
+          <%= form.select :state, Dwar::Flag.states.keys %>
+        </div>
+
+        <div class="dwar-field">
+          <%= form.label :percentage %>
+          <%= form.number_field :percentage, in: 0..100 %>
+          <p class="dwar-hint">Percentage of users for whom this flag will be enabled.</p>
+        </div>
+
+        <fieldset class="dwar-group-picker">
+          <legend>Groups</legend>
+
+          <div class="dwar-checkbox-list">
+            <%= form.collection_check_boxes :group_ids, group_options, :id, :name do |builder| %>
+              <%= builder.label(class: "dwar-checkbox") do %>
+                <%= builder.check_box %>
+                <%= builder.text %>
+              <% end %>
+            <% end %>
+          </div>
+
+          <% if group_options_capped? %>
+            <p class="dwar-hint">
+              Showing up to <%= Dwar::Admin::FlagsController::GROUP_OPTIONS_LIMIT %> groups; groups already targeted by this flag are always included.
+            </p>
+          <% end %>
+        </fieldset>
+      </div>
+
+      <div class="dwar-card__footer">
+        <%= form.submit "Save flag", class: "dwar-btn dwar-btn--primary" %>
+      </div>
     </div>
   <% end %>
-
-  <div>
-    <%= form.label :key %>
-    <%= form.text_field :key %>
-  </div>
-
-  <div>
-    <%= form.label :description %>
-    <%= form.text_area :description %>
-  </div>
-
-  <div>
-    <%= form.label :state %>
-    <%= form.select :state, Dwar::Flag.states.keys %>
-  </div>
-
-  <div>
-    <%= form.label :percentage %>
-    <%= form.number_field :percentage, in: 0..100 %>
-  </div>
-
-  <fieldset class="dwar-group-picker">
-    <legend>Groups</legend>
-    <div class="dwar-checkbox-list">
-      <%= form.collection_check_boxes :group_ids, group_options, :id, :name do |builder| %>
-        <%= builder.label(class: "dwar-checkbox") do %>
-          <%= builder.check_box %>
-          <%= builder.text %>
-        <% end %>
-      <% end %>
-    </div>
-    <% if group_options_capped? %>
-      <p>Showing up to <%= Dwar::Admin::FlagsController::GROUP_OPTIONS_LIMIT %> groups; groups already targeted by this flag are always included.</p>
-    <% end %>
-  </fieldset>
-
-  <div>
-    <%= form.submit %>
-  </div>
-<% end %>
+</div>
