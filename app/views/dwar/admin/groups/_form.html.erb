@@ -1,26 +1,47 @@
-<% if group.errors.any? %>
-  <div id="error_explanation">
-    <h2><%= pluralize(group.errors.count, "error") %> prohibited this group from being saved:</h2>
-    <ul>
-      <% group.errors.full_messages.each do |message| %>
-        <li><%= message %></li>
+<div class="dwar-form-page">
+  <div class="dwar-page-header">
+    <div>
+      <h1><%= group.persisted? ? "Edit group" : "New group" %></h1>
+      <p class="dwar-page-subtitle">Create and manage groups used for flag targeting.</p>
+    </div>
+
+    <%= link_to "Back to groups", admin_groups_path, class: "dwar-btn" %>
+  </div>
+
+  <%= form_with(model: group, url: group.persisted? ? admin_group_path(group) : admin_groups_path, local: true, class: "dwar-form") do |form| %>
+    <div class="dwar-card">
+      <% if group.errors.any? %>
+        <div id="error_explanation" class="dwar-alert">
+          <h3><%= pluralize(group.errors.count, "error") %> prohibited this group from being saved:</h3>
+
+          <ul>
+            <% group.errors.full_messages.each do |message| %>
+              <li><%= message %></li>
+            <% end %>
+          </ul>
+        </div>
       <% end %>
-    </ul>
-  </div>
-<% end %>
 
-<%= form_with(model: group, url: group.persisted? ? admin_group_path(group) : admin_groups_path, local: true) do |form| %>
-  <div>
-    <%= form.label :name %>
-    <%= form.text_field :name %>
-  </div>
+      <div class="dwar-card__header">
+        <h2>Group details</h2>
+        <p class="dwar-hint">Name the group and describe what it is used for.</p>
+      </div>
 
-  <div>
-    <%= form.label :description %>
-    <%= form.text_field :description %>
-  </div>
+      <div class="dwar-card__body">
+        <div class="dwar-field">
+          <%= form.label :name %>
+          <%= form.text_field :name %>
+        </div>
 
-  <div>
-    <%= form.submit %>
-  </div>
-<% end %>
+        <div class="dwar-field">
+          <%= form.label :description %>
+          <%= form.text_field :description %>
+        </div>
+      </div>
+
+      <div class="dwar-card__footer">
+        <%= form.submit "Save group", class: "dwar-btn dwar-btn--primary" %>
+      </div>
+    </div>
+  <% end %>
+</div>

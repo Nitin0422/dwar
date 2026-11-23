@@ -1,60 +1,96 @@
-<h1>Flags</h1>
-
-<p><%= link_to "New flag", new_admin_flag_path, class: "dwar-btn dwar-btn--primary" %></p>
-
-<%= form_with url: admin_flags_path, method: :get, local: true, class: "dwar-search" do |form| %>
+<div class="dwar-page-header">
   <div>
-    <%= form.label :q, "Search" %>
-    <%= form.search_field :q, value: params[:q] %>
-    <%= form.submit "Search" %>
+    <h1>Flags</h1>
+    <p class="dwar-page-subtitle">Manage feature flags and their targeting rules.</p>
   </div>
-<% end %>
 
-<p>Showing up to <%= Dwar::Admin::FlagsController::FLAG_LIMIT %> flags, ordered by key. Use search to narrow the list.</p>
+  <%= link_to "New flag", new_admin_flag_path, class: "dwar-btn dwar-btn--primary" %>
+</div>
 
-<table>
-  <thead>
-    <tr>
-      <th>Key</th>
-      <th>State</th>
-      <th>Targeting</th>
-      <th>Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-    <% if @flags.any? %>
-      <% @flags.each do |flag| %>
-        <tr>
-          <td><%= flag.key %></td>
-          <td><%= flag.state %></td>
-          <td>
-            <% if flag.groups_and_percentage? %>
-              <%= flag.percentage %>% &middot; <%= flag.groups.map(&:name).join(", ").presence || "(no groups)" %>
-            <% elsif flag.percentage? %>
-              <%= flag.percentage %>%
-            <% elsif flag.groups? %>
-              <%= flag.groups.map(&:name).join(", ").presence || "(no groups)" %>
-            <% elsif flag.enabled? %>
-              Everyone
-            <% else %>
-              &mdash;
-            <% end %>
-          </td>
-          <td>
-            <div class="dwar-actions">
-              <%= link_to "Edit", edit_admin_flag_path(flag), class: "dwar-btn" %>
-              <%= button_to "Destroy", admin_flag_path(flag),
-                  method: :delete,
-                  class: "dwar-btn dwar-btn--danger",
-                  form: {class: "button_to", data: {turbo_confirm: "Are you sure?"}} %>
-            </div>
-          </td>
-        </tr>
-      <% end %>
-    <% else %>
-      <tr>
-        <td colspan="4">No flags found.</td>
-      </tr>
+<div class="dwar-card">
+  <div class="dwar-card__header">
+    <div class="dwar-card__intro">
+      <h2>All flags</h2>
+      <p class="dwar-hint">
+        Showing up to <%= Dwar::Admin::FlagsController::FLAG_LIMIT %> flags, ordered by key.
+        Use search to narrow the list.
+      </p>
+    </div>
+
+    <%= form_with url: admin_flags_path, method: :get, local: true, class: "dwar-search" do |form| %>
+      <div>
+        <%= form.search_field :q, value: params[:q], placeholder: "Search flags by key..." %>
+        <%= form.submit "Search", class: "dwar-btn dwar-btn--primary" %>
+      </div>
     <% end %>
-  </tbody>
-</table>
+  </div>
+
+  <div class="dwar-table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Key</th>
+          <th>State</th>
+          <th>Targeting</th>
+          <th class="dwar-col-actions">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if @flags.any? %>
+          <% @flags.each do |flag| %>
+            <tr>
+              <td class="dwar-row-key"><%= flag.key %></td>
+
+              <td>
+                <span class="dwar-badge <%= "dwar-badge--on" if flag.enabled? %>">
+                  <%= flag.state %>
+                </span>
+              </td>
+
+              <td class="dwar-cell-muted">
+                <% if flag.groups_and_percentage? %>
+                  <span class="dwar-row-key"><%= flag.percentage %>%</span>
+                  &middot;
+                  <%= flag.groups.map(&:name).join(", ").presence || "(no groups)" %>
+                <% elsif flag.percentage? %>
+                  <span class="dwar-row-key"><%= flag.percentage %>%</span>
+                <% elsif flag.groups? %>
+                  <%= flag.groups.map(&:name).join(", ").presence || "(no groups)" %>
+                <% elsif flag.enabled? %>
+                  Everyone
+                <% else %>
+                  &mdash;
+                <% end %>
+              </td>
+
+              <td class="dwar-col-actions">
+                <div class="dwar-actions dwar-actions--end">
+                  <%= link_to "Edit", edit_admin_flag_path(flag), class: "dwar-btn" %>
+                  <%= button_to "Destroy", admin_flag_path(flag),
+                      method: :delete,
+                      class: "dwar-btn dwar-btn--danger",
+                      form: {class: "button_to", data: {turbo_confirm: "Are you sure?"}} %>
+                </div>
+              </td>
+            </tr>
+          <% end %>
+        <% else %>
+          <tr>
+            <td colspan="4" class="dwar-empty-cell">
+              <div class="dwar-empty">
+                <p class="dwar-empty__title">No flags found.</p>
+                <p class="dwar-empty__text">
+                  <% if params[:q].present? %>
+                    Try changing your search or clearing it to see all flags.
+                  <% else %>
+                    Get started by creating your first feature flag.
+                  <% end %>
+                </p>
+              </div>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

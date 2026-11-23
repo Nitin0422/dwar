@@ -108,25 +108,122 @@
          minimum descendant rule needed to align row actions. */
       main td { vertical-align: middle; }
       main .dwar-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+      main .dwar-actions--end { justify-content: flex-end; }
+
+      /* Admin page shell: title/subtitle on the left, primary action right. */
+      main .dwar-page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+      }
+      main .dwar-page-header h1 { margin: 0; }
+      main .dwar-page-subtitle { margin: 6px 0 0; color: #6b7280; font-size: 14px; }
+
+      /* Card: groups a section header, body, and footer behind one border. */
+      main .dwar-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        overflow: hidden;
+        background: var(--dwar-surface);
+      }
+      main .dwar-card + .dwar-card { margin-top: 1.5rem; }
+      main .dwar-card__header { padding: 20px; border-bottom: 1px solid #e5e7eb; }
+      main .dwar-card__header h2 { margin: 0; font-size: 18px; font-weight: 600; color: var(--dwar-text); }
+      main .dwar-card__intro { margin-bottom: 16px; }
+      main .dwar-card__body { padding: 20px; }
+      main .dwar-card__footer {
+        padding: 16px 20px;
+        border-top: 1px solid #e5e7eb;
+        background: var(--dwar-surface-muted);
+      }
+
+      /* Tables sit inside a card. The <table>/<td> tags stay bare so row
+         markup remains semantic; styling comes from the card ancestor. */
+      main .dwar-card table { width: 100%; border-collapse: collapse; text-align: left; }
+      main .dwar-card thead tr { background: var(--dwar-surface-muted); }
+      main .dwar-card th {
+        padding: 12px 20px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      main .dwar-card td { padding: 16px 20px; }
+      main .dwar-card tbody tr + tr { border-top: 1px solid #e5e7eb; }
+      main .dwar-card .dwar-col-actions { text-align: right; }
+      main .dwar-table-wrap { overflow-x: auto; }
+      main .dwar-card td.dwar-empty-cell { padding: 0; }
+      main .dwar-row-key { font-weight: 500; color: var(--dwar-text); }
+      main .dwar-cell-muted { color: #6b7280; }
+
+      /* Empty state shown in place of table rows. */
+      main .dwar-empty { padding: 48px 20px; text-align: center; }
+      main .dwar-empty__title { margin: 0 0 8px; font-size: 16px; font-weight: 600; color: var(--dwar-text); }
+      main .dwar-empty__text { margin: 0; color: #6b7280; font-size: 14px; }
+
+      /* Status pill. */
+      main .dwar-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        background: #f3f4f6;
+        color: #4b5563;
+      }
+      main .dwar-badge--on { background: #dcfce7; color: #166534; }
+
+      /* Form layout: fields stack inside the card body. */
+      main .dwar-field { margin-bottom: 20px; }
+      main .dwar-field > label { display: block; margin-bottom: 8px; font-size: 13px; font-weight: 600; color: #374151; }
+      main .dwar-hint { margin: 6px 0 0; font-size: 12px; color: #6b7280; }
+      main .dwar-form-page { max-width: 680px; }
+      main form.dwar-form { display: block; max-width: none; }
+      main form.dwar-form > div { display: block; gap: 0; }
+
+      /* Inline validation alert. */
+      main .dwar-alert {
+        margin: 20px;
+        padding: 16px;
+        border: 1px solid #fecaca;
+        border-radius: 8px;
+        background: #fef2f2;
+        color: #b91c1c;
+      }
+      main .dwar-alert--inline { margin: 0 0 20px; }
+      main .dwar-alert h3 { margin: 0 0 10px; font-size: 14px; font-weight: 600; }
+      main .dwar-alert ul { margin: 0; padding-left: 20px; font-size: 14px; }
+      main .dwar-alert li { margin-bottom: 4px; }
+
+      /* Search bar: input grows, submit sits beside it. */
+      main form.dwar-search { align-items: center; }
+      main form.dwar-search > div { align-items: center; }
+      main form.dwar-search input[type="search"] { flex: 1 1 auto; min-width: 0; }
+
       /* Flag group picker: scrollable checkbox panel inside a fieldset. */
       main .dwar-group-picker {
         margin: 0;
-        padding: 0.5rem 0.75rem 0.75rem;
-        border: 1px solid var(--dwar-border);
-        border-radius: var(--dwar-radius);
+        padding: 16px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
       }
-      main .dwar-group-picker legend { padding: 0 0.35rem; font-weight: 600; color: var(--dwar-text); }
-      main .dwar-checkbox-list { display: grid; gap: 0.125rem; max-height: 16rem; overflow-y: auto; }
+      main .dwar-group-picker legend { padding: 0 6px; font-weight: 600; color: var(--dwar-text); }
+      main .dwar-checkbox-list { display: grid; gap: 0.5rem; max-height: 16rem; overflow-y: auto; margin-top: 8px; }
       main .dwar-checkbox {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
-        padding: 0.3rem 0.5rem;
-        border-radius: 4px;
+        gap: 0.625rem;
+        padding: 0.625rem 0.75rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        background: var(--dwar-surface-muted);
         font-weight: 400;
         cursor: pointer;
       }
-      main .dwar-checkbox:hover { background: var(--dwar-surface-muted); }
+      main .dwar-checkbox:hover { background: #f3f4f6; }
       main .dwar-checkbox input[type="checkbox"] { width: 1rem; height: 1rem; margin: 0; accent-color: var(--dwar-accent); }
       /* Visible keyboard focus ring. */
       main a:focus-visible,

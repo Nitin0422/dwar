@@ -1,73 +1,104 @@
-<h1>Members of <%= @group.name %></h1>
-
-<p><%= link_to "Back to groups", admin_groups_path, class: "dwar-btn" %></p>
-
-<% if @membership.errors.any? %>
-  <div id="error_explanation">
-    <h2><%= pluralize(@membership.errors.count, "error") %> prohibited this member from being added:</h2>
-    <ul>
-      <% @membership.errors.full_messages.each do |message| %>
-        <li><%= message %></li>
-      <% end %>
-    </ul>
-  </div>
-<% end %>
-
-<% if @memberships.any? %>
-  <table>
-    <thead>
-      <tr>
-        <th>Member</th>
-        <th>Actor</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% @memberships.each do |membership| %>
-        <tr>
-          <td><%= @member_labels[membership.id] %></td>
-          <td><%= membership.actor_type %> #<%= membership.actor_id %></td>
-          <td>
-            <div class="dwar-actions">
-              <%= button_to "Remove", admin_group_membership_path(@group, membership),
-                  method: :delete,
-                  class: "dwar-btn dwar-btn--danger",
-                  form: {class: "button_to", data: {turbo_confirm: "Are you sure?"}} %>
-            </div>
-          </td>
-        </tr>
-      <% end %>
-    </tbody>
-  </table>
-<% else %>
-  <p>No members yet.</p>
-<% end %>
-
-<h2>Add member</h2>
-<%= form_with url: admin_group_memberships_path(@group), local: true do %>
-  <%# The actor id comes from the picker hidden field below; actor_type %>
-  <%# defaults to User. See MembershipsController#resolve_actor_type for the %>
-  <%# allowlist guard on the posted type. %>
-  <%= render "dwar/admin/shared/user_picker",
-      url: admin_users_path(format: :json),
-      input_name: "user_search",
-      input_id: "dwar-membership-user-search",
-      hidden_name: "membership[actor_id]",
-      hidden_id: "dwar-membership-actor-id" %>
-  <input type="hidden" name="membership[actor_type]" id="dwar-membership-actor-type" value="User">
+<div class="dwar-page-header">
   <div>
-    <%= submit_tag "Add member" %>
+    <h1>Members of <%= @group.name %></h1>
+    <p class="dwar-page-subtitle">Control who is targeted through this group.</p>
   </div>
-<% end %>
-<%# The picker library (app/assets/javascripts/dwar/user_picker.js) is loaded %>
-<%# by the host per the partial's contract — the same posture as T11's demo %>
-<%# harness, which serves it from a dev-only route. The guarded init below %>
-<%# never throws: it shows a visible hint and logs a warning instead of %>
-<%# failing silently — covering a missing library, missing markup/endpoint, %>
-<%# a throwing init, and an init that returns no handle; the form still %>
-<%# submits. The visible hint stays generic (dev detail lives in the %>
-<%# console warning only). %>
-<p data-dwar-picker-missing role="status" hidden>Autocomplete unavailable — you can still submit this form.</p>
+
+  <%= link_to "Back to groups", admin_groups_path, class: "dwar-btn" %>
+</div>
+
+<div class="dwar-card">
+  <div class="dwar-card__header">
+    <h2>Members</h2>
+    <p class="dwar-hint">People currently tracked in this group.</p>
+  </div>
+
+  <div class="dwar-table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Member</th>
+          <th>Actor</th>
+          <th class="dwar-col-actions">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if @memberships.any? %>
+          <% @memberships.each do |membership| %>
+            <tr>
+              <td class="dwar-row-key"><%= @member_labels[membership.id] %></td>
+              <td class="dwar-cell-muted"><%= membership.actor_type %> #<%= membership.actor_id %></td>
+              <td class="dwar-col-actions">
+                <div class="dwar-actions dwar-actions--end">
+                  <%= button_to "Remove", admin_group_membership_path(@group, membership),
+                      method: :delete,
+                      class: "dwar-btn dwar-btn--danger",
+                      form: {class: "button_to", data: {turbo_confirm: "Are you sure?"}} %>
+                </div>
+              </td>
+            </tr>
+          <% end %>
+        <% else %>
+          <tr>
+            <td colspan="3" class="dwar-empty-cell">
+              <div class="dwar-empty">
+                <p class="dwar-empty__title">No members yet.</p>
+                <p class="dwar-empty__text">Search for a user below to add them to this group.</p>
+              </div>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="dwar-card">
+  <div class="dwar-card__header">
+    <h2>Add member</h2>
+    <p class="dwar-hint">Search for a user to add to this group.</p>
+  </div>
+
+  <div class="dwar-card__body">
+    <% if @membership.errors.any? %>
+      <div id="error_explanation" class="dwar-alert dwar-alert--inline">
+        <h3><%= pluralize(@membership.errors.count, "error") %> prohibited this member from being added:</h3>
+
+        <ul>
+          <% @membership.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <%= form_with url: admin_group_memberships_path(@group), local: true do %>
+      <%# The actor id comes from the picker hidden field below; actor_type %>
+      <%# defaults to User. See MembershipsController#resolve_actor_type for the %>
+      <%# allowlist guard on the posted type. %>
+      <%= render "dwar/admin/shared/user_picker",
+          url: admin_users_path(format: :json),
+          input_name: "user_search",
+          input_id: "dwar-membership-user-search",
+          hidden_name: "membership[actor_id]",
+          hidden_id: "dwar-membership-actor-id" %>
+      <input type="hidden" name="membership[actor_type]" id="dwar-membership-actor-type" value="User">
+      <div>
+        <%= submit_tag "Add member", class: "dwar-btn dwar-btn--primary" %>
+      </div>
+    <% end %>
+    <%# The picker library (app/assets/javascripts/dwar/user_picker.js) is loaded %>
+    <%# by the host per the partial's contract — the same posture as T11's demo %>
+    <%# harness, which serves it from a dev-only route. The guarded init below %>
+    <%# never throws: it shows a visible hint and logs a warning instead of %>
+    <%# failing silently — covering a missing library, missing markup/endpoint, %>
+    <%# a throwing init, and an init that returns no handle; the form still %>
+    <%# submits. The visible hint stays generic (dev detail lives in the %>
+    <%# console warning only). %>
+    <p class="dwar-hint" data-dwar-picker-missing role="status" hidden>Autocomplete unavailable — you can still submit this form.</p>
+  </div>
+</div>
+
 <script>
   (function() {
     function showPickerHint(reason) {
