@@ -1,30 +1,51 @@
-<h1>Audit trail</h1>
+<div class="dwar-page-header">
+  <div>
+    <h1>Audit trail</h1>
+    <p class="dwar-page-subtitle">Review changes made to flags and groups.</p>
+  </div>
+</div>
 
-<p>Showing up to <%= Dwar::Admin::AuditsController::AUDIT_LIMIT %> most recent entries, newest first.</p>
+<div class="dwar-card">
+  <div class="dwar-card__header">
+    <h2>Recent activity</h2>
+    <p class="dwar-hint">
+      Showing up to <%= Dwar::Admin::AuditsController::AUDIT_LIMIT %> most recent entries, newest first.
+    </p>
+  </div>
 
-<% if @audits.any? %>
-  <table>
-    <thead>
-      <tr>
-        <th>When</th>
-        <th>Action</th>
-        <th>Record</th>
-        <th>Actor</th>
-        <th>Changes</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% @audits.each do |audit| %>
+  <div class="dwar-table-wrap">
+    <table>
+      <thead>
         <tr>
-          <td><%= audit.created_at.strftime("%Y-%m-%d %H:%M:%S") %></td>
-          <td><%= audit.action %></td>
-          <td><%= @record_labels[audit.id] %></td>
-          <td><%= actor_label(audit) %></td>
-          <td><%= truncate(summary_text(audit.change_summary), length: 160) %></td>
+          <th>When</th>
+          <th>Action</th>
+          <th>Record</th>
+          <th>Actor</th>
+          <th>Changes</th>
         </tr>
-      <% end %>
-    </tbody>
-  </table>
-<% else %>
-  <p>No audit entries yet.</p>
-<% end %>
+      </thead>
+      <tbody>
+        <% if @audits.any? %>
+          <% @audits.each do |audit| %>
+            <tr>
+              <td class="dwar-cell-muted"><%= audit.created_at.strftime("%Y-%m-%d %H:%M:%S") %></td>
+              <td><span class="dwar-badge"><%= audit.action %></span></td>
+              <td><%= @record_labels[audit.id] %></td>
+              <td><%= actor_label(audit) %></td>
+              <td class="dwar-cell-muted"><%= truncate(summary_text(audit.change_summary), length: 160) %></td>
+            </tr>
+          <% end %>
+        <% else %>
+          <tr>
+            <td colspan="5" class="dwar-empty-cell">
+              <div class="dwar-empty">
+                <p class="dwar-empty__title">No audit entries yet.</p>
+                <p class="dwar-empty__text">Changes to flags and groups will appear here.</p>
+              </div>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
